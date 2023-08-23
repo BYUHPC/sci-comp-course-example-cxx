@@ -1,0 +1,6 @@
+[submodule "CoordinatedLoopingThreadpoolCXX"]
+	path = CoordinatedLoopingThreadpoolCXX
+	url = git@github.com:BYUHPC/CoordinatedLoopingThreadpoolCXX.git
+[submodule "simple-cxx-binary-io"]
+	path = simple-cxx-binary-io
+	url = git@github.com:BYUHPC/simple-cxx-binary-io.git

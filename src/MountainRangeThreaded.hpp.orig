@@ -1,0 +1,130 @@
+#ifndef MOUNTAIN_RANGE_THREADED_H
+#define MOUNTAIN_RANGE_THREADED_H
+#include <cstring>
+#include <charconv>
+#include <vector>
+#include <array>
+#include <ranges>
+#include <thread>
+#include <semaphore>
+#include <atomic>
+#include <barrier>
+#include "MountainRangeSharedMem.hpp"
+
+
+
+namespace threadpool {
+    /* CoordinatedLoopingThreadpool facilitates the coordinated repeated execution of one function on several arguments.
+     *
+     * Execution of the function is controlled by CoordinatedLoopingThreadpool::trigger--each time it is called is
+     * equivalent to running `std::apply(F, args)`.
+     *
+     */
+    class CoordinatedLoopingThreadpool {
+        std::vector<std::jthread> workers;
+        std::counting_semaphore<> start_sem, finish_sem;
+
+    public:
+        CoordinatedLoopingThreadpool(auto F, const auto &&args): start_sem(0), finish_sem(args.size()) {
+            for (auto arg: args) {
+                workers.emplace_back([this, F, arg](std::stop_token token){
+                    while (true) {
+                        start_sem.acquire();
+                        if (token.stop_requested()) return;
+                        F(arg);
+                        finish_sem.release();
+                    }
+                });
+            }
+        }
+
+        ~CoordinatedLoopingThreadpool() {
+            for (auto &w: workers) w.request_stop();
+            start_sem.release(workers.size());
+        }
+
+        constexpr auto size() const { return workers.size(); }
+
+        void trigger() {
+            for (const auto &w: workers) finish_sem.acquire();
+            start_sem.release(workers.size());
+        }
+    };
+};
+
+
+
+namespace {
+    // Read in an environment variable as a size_t, returning default if key is of any format other than "^[0-9]+$"
+    size_t getenv_as_size_t(auto key, size_t default_value=1) {
+        auto val = std::getenv(key);
+        if (val == nullptr) return default_value;
+        size_t result;
+        auto [ptr, error] = std::from_chars(val, val+std::strlen(val), result);
+        return ptr == val+std::strlen(val) ? result : default_value;
+    }
+}
+
+
+
+class MountainRangeThreaded: public MountainRangeSharedMem {
+    // Members
+    const size_t nthreads = getenv_as_size_t("SOLVER_NUM_THREADS");
+    threadpool::CoordinatedLoopingThreadpool ds_workers, step_workers;
+    std::atomic<value_type> ds_aggregator;
+    std::barrier<> step_barrier, ds_barrier;
+    value_type iter_time_step;
+
+
+
+    // Per-thread step and ds
+    constexpr auto ds_this_thread(auto tid) {
+        auto [first, last] = divided_cell_range(h.size(), tid, nthreads);
+        ds_aggregator += ds_section(first, last);
+        ds_barrier.arrive_and_wait();
+    }
+
+    constexpr void step_this_thread(auto tid) {
+        auto [first, last] = divided_cell_range(h.size(), tid, nthreads);
+        update_h_section(first, last, iter_time_step);
+        step_barrier.arrive_and_wait();
+        update_g_section(first, last);
+    }
+
+
+
+public:
+    // Constructor
+    MountainRangeThreaded(auto &&...args): MountainRangeSharedMem(args...),
+                                           ds_workers([this](auto tid){
+                                               ds_this_thread(tid);
+                                           }, std::views::iota(decltype(nthreads)(1), nthreads)),
+                                           step_workers([this](auto tid){
+                                               step_this_thread(tid);
+                                           }, std::views::iota(decltype(nthreads)(1), nthreads)),
+                                           step_barrier(nthreads), ds_barrier(nthreads)  {
+        step(0);
+    }
+
+
+
+    // User-facing functions
+    value_type dsteepness() {
+        ds_aggregator = 0;
+        ds_workers.trigger();
+        ds_this_thread(0);
+        return ds_aggregator / h.size();
+    }
+
+    value_type step(value_type time_step) {
+        iter_time_step = time_step;
+        step_workers.trigger();
+        step_this_thread(0);
+        t += time_step;
+        return t;
+    }
+};
+
+
+
+#endif
