@@ -33,18 +33,18 @@ The binaries `initial`, `mountaindiff` and `solver_*` will be built.
 
 ## Usage
 
-`mountaindiff` is used to check whether two [binary mountain range files](TODO) are similar enough to be considered identical; run `mountaindiff --help` for its usage.
+`mountaindiff` is used to check whether two [binary mountain range files](#io-format) are similar enough to be considered identical; run `mountaindiff --help` for its usage.
 
 The other binaries mirror those that will be built for the C++ phases of the project:
 
 | Corresponding Phase | Binary | Source files |
 | --- | --- | --- |
-| [Phase 1](https://byuhpc.github.io/sci-comp-course/project/phase1) | `initial` | [initial](src/initial.cc), [MtnRngSM](src/MountainRangeSharedMem.hpp), [MtnRngOMP](src/MountainRangeOpenMP.hpp) |
-| [Phase 2](https://byuhpc.github.io/sci-comp-course/project/phase2) | `solver_serial`* | [solver_openmp](src/solver_openmp.hpp), [MtnRngSM](src/MountainRangeSharedMem.hpp), [MtnRngOMP](src/MountainRangeOpenMP.hpp) |
-| [Phase 3](https://byuhpc.github.io/sci-comp-course/project/phase3) | `solver_openmp` | [solver_openmp](src/solver_openmp.hpp), [MtnRngSM](src/MountainRangeSharedMem.hpp), [MtnRngOMP](src/MountainRangeOpenMP.hpp) |
-| [Phase 5](https://byuhpc.github.io/sci-comp-course/project/phase5) | `solver_thread` | [solver_thread](src/solver_thread.hpp), [MtnRngSM](src/MountainRangeSharedMem.hpp), [MtnRngThrd](src/MountainRangeThreaded.hpp), [CLTP](CoordinatedLoopingThreadpoolCXX/CoordinatedLoopingThreadpool.hpp) |
-| [Phase 7](https://byuhpc.github.io/sci-comp-course/project/phase7) | `solver_mpi`* | [solver_mpi](src/solver_mpi.hpp), [MtnRngMPI](src/MountainRangeMPI.hpp) |
-| [Phase 8](https://byuhpc.github.io/sci-comp-course/project/phase8) | `solver_gpu`* | [solver_gpu](src/solver_gpu.hpp), [MtnRngSM](src/MountainRangeSharedMem.hpp), [MtnRngGPU](src/MountainRangeGPU.hpp) |
+| [Phase 1](https://byuhpc.github.io/sci-comp-course/project/phase1) | `initial` | [initial](src/initial.cpp), [MtnRngSM](src/MountainRangeSharedMem.hpp), [MtnRngOMP](src/MountainRangeOpenMP.hpp) |
+| [Phase 2](https://byuhpc.github.io/sci-comp-course/project/phase2) | `solver_serial`* | [solver_openmp](src/solver_openmp.cpp), [MtnRngSM](src/MountainRangeSharedMem.hpp), [MtnRngOMP](src/MountainRangeOpenMP.hpp) |
+| [Phase 3](https://byuhpc.github.io/sci-comp-course/project/phase3) | `solver_openmp` | [solver_openmp](src/solver_openmp.cpp), [MtnRngSM](src/MountainRangeSharedMem.hpp), [MtnRngOMP](src/MountainRangeOpenMP.hpp) |
+| [Phase 5](https://byuhpc.github.io/sci-comp-course/project/phase5) | `solver_thread` | [solver_thread](src/solver_thread.cpp), [MtnRngSM](src/MountainRangeSharedMem.hpp), [MtnRngThrd](src/MountainRangeThreaded.hpp), [CLTP](CoordinatedLoopingThreadpoolCXX/CoordinatedLoopingThreadpool.hpp) |
+| [Phase 7](https://byuhpc.github.io/sci-comp-course/project/phase7) | `solver_mpi`* | [solver_mpi](src/solver_mpi.cpp), [MtnRngMPI](src/MountainRangeMPI.hpp) |
+| [Phase 8](https://byuhpc.github.io/sci-comp-course/project/phase8) | `solver_gpu`* | [solver_gpu](src/solver_gpu.cpp), [MtnRngSM](src/MountainRangeSharedMem.hpp), [MtnRngGPU](src/MountainRangeGPU.hpp) |
 
 In addition to the source files listed above, each binary depends on [MtnRng](src/MountainRange.hpp), and each `solver_*` depends on [binary_io](simple-cxx-binary-io/binary_io.hpp) and [run_solver](src/run_solver.hpp).
 
@@ -145,6 +145,34 @@ function solve(t0, h0, g0, r, dt)
     return h, g, t
 end
 ```
+
+`initial` simply creates a mountain range, solves it, and prints the resulting simulation time. `solver_*` read files containing [binary mountain ranges](#io-format), solve them, and write the solved mountain ranges in the same format. There are several sample input and output files in the [samples directory](samples) that are meant to be used for validation; as an example, one could check that `solver_thread` works as expected with four threads thus:
+
+```bash
+SOLVER_NUM_THREADS=4 build-dir/solver_thread samples/small-1D-in.mr /tmp/my-small-1D-out.mr
+build-dir/mountaindiff samples/small-1D-out.mr /tmp/my-small-1D-out.mr \
+        && echo Success \
+        || echo Failure
+```
+
+
+
+## I/O Format
+
+Mountain range data files contain binary data sufficient to represent the [state](#the-problem-orogeny) of the simulation. Here is the order and format of the elements in a mountain range file:
+
+| | Member | Format |
+| --- | --- | --- |
+| 1 | Number of dimensions (always 1 in our case) | 64-bit unsigned integer |
+| 2 | Number of elements in each array (`n`) | 64-bit unsigned interger |
+| 3 | Simulation time | 64-bit float |
+| 4 | Height array | `n` 64-bit floats |
+| 5 | Uplift rate array | `n` 64-bit floats |
+
+The data is tightly packed--there are no gaps between elements.
+
+See the `write` function in [`src/MountainRangeSharedMem.hpp`](src/MountainRangeSharedMem.hpp) for an example of how to write in binary.
+
 
 
 ## Appendix A: Mathematical Justification
