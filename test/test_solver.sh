@@ -5,14 +5,14 @@
 # Since this is only used for testing with CMake, there is no error handling, no help message, etc.
 
 # Arguments:
-# - first:                        path to the mountain_diff binary
+# - first:                        path to the mountaindiff binary
 # - second through third to last: the command (and optionally its arguments) to run the solver
 # - second to last:               the input file
 # - last:                         the expected output file
 
 # Examples:
-# test/test_solver.sh bld/mountain_diff bld/solver_thread samples/small-1D-in.dat samples/small-1D-out.dat
-# test/test_solver.sh bld/mountain_diff mpirun -n 3 bld/solver_mpi samples/tiny-1D-in.dat samples/tiny-1D-out.dat
+# test/test_solver.sh bld/mountaindiff bld/solver_thread samples/small-1D-in.dat samples/small-1D-out.dat
+# test/test_solver.sh bld/mountaindiff mpirun -n 3 bld/solver_mpi samples/tiny-1D-in.dat samples/tiny-1D-out.dat
 
 # Parse
 mtn_diff="$1"

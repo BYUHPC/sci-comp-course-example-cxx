@@ -17,14 +17,19 @@ set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 include_directories(src)
 include_directories(simple-cxx-binary-io)
 
+# Default to RelWithDebInfo build
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING "Choose Release, Debug, or RelWithDebInfo" FORCE)
+endif()
+
 
 
 
 
 # BINARIES #############################################################################################################
 
-# mountain_diff
-add_executable(mountain_diff src/mountain_diff.cpp)
+# mountaindiff
+add_executable(mountaindiff src/mountaindiff.cpp)
 
 # initial
 add_executable(initial src/initial.cpp)
@@ -75,7 +80,7 @@ include(CTest)
 if(BUILD_TESTING)
     # Helpers
     set(TEST_SOLVER "${CMAKE_SOURCE_DIR}/test/test_solver.sh")
-    set(MTN_DIFF "${CMAKE_CURRENT_BINARY_DIR}/mountain_diff")
+    set(MTN_DIFF "${CMAKE_CURRENT_BINARY_DIR}/mountaindiff")
     set(TESTING_INFILE "${CMAKE_SOURCE_DIR}/samples/tiny-1D-in.dat" CACHE STRING "input mountain range file for tests")
     set(TESTING_OUTFILE "${CMAKE_SOURCE_DIR}/samples/tiny-1D-out.dat" CACHE STRING "expected output file for tests")
     function(test_solver SOLVER_NAME TEST_NAME)
@@ -84,15 +89,15 @@ if(BUILD_TESTING)
                               "${TESTING_INFILE}" "${TESTING_OUTFILE}")
     endfunction()
 
-    # mountain_diff
-    add_test(NAME "mountain_diff accepts identical plates"
+    # mountaindiff
+    add_test(NAME "mountaindiff accepts identical plates"
              COMMAND "${MTN_DIFF}" "${TESTING_INFILE}" "${TESTING_INFILE}")
-    add_test(NAME "mountain_diff rejects plates with different times"
+    add_test(NAME "mountaindiff rejects plates with different times"
              COMMAND "${MTN_DIFF}" "${TESTING_INFILE}" "${TESTING_OUTFILE}")
-    set_property(TEST "mountain_diff rejects plates with different times" PROPERTY WILL_FAIL TRUE)
-    add_test(NAME "mountain_diff rejects plates with different sizes"
+    set_property(TEST "mountaindiff rejects plates with different times" PROPERTY WILL_FAIL TRUE)
+    add_test(NAME "mountaindiff rejects plates with different sizes"
              COMMAND "${MTN_DIFF}" "${TESTING_INFILE}" "${CMAKE_SOURCE_DIR}/samples/small-1D-in.dat")
-    set_property(TEST "mountain_diff rejects plates with different sizes" PROPERTY WILL_FAIL TRUE)
+    set_property(TEST "mountaindiff rejects plates with different sizes" PROPERTY WILL_FAIL TRUE)
 
     # initial
     add_test(NAME "initial works" COMMAND initial)

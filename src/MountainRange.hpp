@@ -125,7 +125,7 @@ protected:
         auto left = i, right = i;
         if constexpr (FML != First) left  -= 1;
         if constexpr (FML != Last ) right += 1;
-        auto ds = (h[right] - h[left]) * (g[right] - g[left]) / 4;
+        auto ds = (h[right] - h[left]) * (g[right] - g[left]) / 2;
         //std::cout << std::setw(10) << ds << "," << g[i] << ":::";
         return ds;
     }
