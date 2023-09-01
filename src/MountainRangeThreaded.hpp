@@ -14,29 +14,29 @@
 
 
 
-namespace {
-    // Read in an environment variable as a size_t, returning default if key is of any format other than "^[0-9]+$"
-    size_t getenv_as_size_t(auto key, size_t default_value=1) {
-        auto val = std::getenv(key);
-        if (val == nullptr) return default_value;
-        size_t result;
-        auto [ptr, error] = std::from_chars(val, val+std::strlen(val), result);
-        return ptr == val+std::strlen(val) ? result : default_value;
-    }
-}
-
-
-
 class MountainRangeThreaded: public MountainRangeSharedMem {
     // Members
-    const size_t nthreads = getenv_as_size_t("SOLVER_NUM_THREADS");
+    const size_t nthreads = []{
+        auto val = std::getenv("SOLVER_NUM_THREADS");
+        if (val == nullptr) return 1ul;
+        size_t nt;
+        auto [ptr, error] = std::from_chars(val, val+std::strlen(val), nt);
+        return ptr == val+std::strlen(val) ? nt : 1ul;
+    }();
+
+
+//getenv_as_size_t("SOLVER_NUM_THREADS");
     CoordinatedLoopingThreadpool ds_workers, step_workers;
     std::atomic<value_type> ds_aggregator;
     std::barrier<> step_barrier, ds_barrier;
     value_type iter_time_step;
+public:
+    inline static const std::string help_message =
+            "Set the environment variable SOLVER_NUM_THREADS to a positive integer to set thread count (default 1).";
 
 
 
+private:
     // Per-thread step and ds
     constexpr auto ds_this_thread(auto tid) {
         auto [first, last] = divided_cell_range(h.size(), tid, nthreads);

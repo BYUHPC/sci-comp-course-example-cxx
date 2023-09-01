@@ -50,6 +50,8 @@ In addition to the source files listed above, each binary depends on [MtnRng](sr
 
 \* `solver_serial` uses identical code to `solver_openmp`, but is compiled without OpenMP--part of the beauty of OpenMP. `solver_mpi` is only built if an MPI compiler is found. `solver_gpu` is only built if the compiler is [Nvidia's HPC SDK](https://developer.nvidia.com/hpc-sdk).
 
+Each generated `solver_*` has a help message explaining its usage; use `<binary-name> --help` to print it.
+
 
 
 ## The Problem: Orogeny
