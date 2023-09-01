@@ -168,8 +168,8 @@ Mountain range data files contain binary data sufficient to represent the [state
 | 1 | Number of dimensions (always 1 in our case) | 64-bit unsigned integer |
 | 2 | Number of elements in each array (`n`) | 64-bit unsigned interger |
 | 3 | Simulation time | 64-bit float |
-| 4 | Height array | `n` 64-bit floats |
-| 5 | Uplift rate array | `n` 64-bit floats |
+| 4 | Uplift rate array | `n` 64-bit floats |
+| 5 | Height array | `n` 64-bit floats |
 
 The data is tightly packed--there are no gaps between elements.
 
