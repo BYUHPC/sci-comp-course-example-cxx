@@ -22,7 +22,7 @@ int run_solver(int argc, char **argv, bool verbose=true) {
                   << "Read a mountain rante from infile, solve it, and write it to outfile." << std::endl;
         if constexpr (requires { MtnRange::help_message; }) std::cout << MtnRange::help_message << std::endl;
         std::cout << "`" << argv[0] << " --help` prints this message." << std::endl;
-    };
+    }; // https://tinyurl.com/byusc-lambda
 
     // Parse
     if (argc > 1 && (std::string(argv[1]) == std::string("-h") || std::string(argv[1]) == std::string("--help"))) {

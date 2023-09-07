@@ -13,9 +13,9 @@ const MountainRange::value_type acceptable_time_ratio         = 1.0001,
 int main(int argc, char **argv) {
     // Set the return code to 1 and print a message if condition is false
     int ret = 0;
-    auto ensure = [&](bool correct, auto &&...message){
+    auto ensure = [&](bool correct, auto &&...message){ // https://tinyurl.com/byusc-parpack
         if (!correct) {
-            (std::cerr << ... << message);
+            (std::cerr << ... << message); // https://tinyurl.com/byucs-foldexp
             std::cerr << std::endl;
             ret = 1;
         }
@@ -28,7 +28,7 @@ int main(int argc, char **argv) {
           << "Compate the mountain ranges in files expected and actual, returning 0 if they seem to represent the same "
           << "mountain range, or printing an error message and returning 1 if not.";
         return s.str();
-    }();
+    }(); // https://tinyurl.com/byusc-lambdai
     if (argc > 1 && (std::string(argv[1]) == std::string("-h") || std::string(argv[1]) == std::string("--help"))) {
         std::cout << help_message << std::endl;
         return 0;
@@ -61,7 +61,7 @@ int main(int argc, char **argv) {
     if (h1.size() == h2.size()) { // no point of comparison if lengths are different
         auto indices = std::views::iota(0ul, h1.size());
         auto m1_height_rms = sqrt(std::transform_reduce(h1.begin(), h1.end(), decltype(m1)::value_type{}, std::plus<>(),
-                                                        [](auto h){ return h * h; }
+                                                        [](auto h){ return h * h; } // https://tinyurl.com/byusc-lambda
                                  ) / h1.size());
         auto height_difference_rms = sqrt(std::transform_reduce(indices.begin(), indices.end(), decltype(m1)::value_type{},
                                                                 std::plus<>(),

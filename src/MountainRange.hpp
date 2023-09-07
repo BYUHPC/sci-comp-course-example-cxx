@@ -93,7 +93,6 @@ protected:
     // Update a section of g, minding boundary conditions
     void update_g_section(auto first, auto last) {
         if (first == last) return;
-        [this](auto &&...args){}(r, h, g, first);
         first == 0       ? update_g_cell<First>(r, h, g, first)  : update_g_cell<Middle>(r, h, g, first);
         #pragma omp parallel for
         for (auto i=first+1; i<last-1; i++) {
@@ -126,7 +125,6 @@ protected:
         if constexpr (FML != First) left  -= 1;
         if constexpr (FML != Last ) right += 1;
         auto ds = (h[right] - h[left]) * (g[right] - g[left]) / 2;
-        //std::cout << std::setw(10) << ds << "," << g[i] << ":::";
         return ds;
     }
 

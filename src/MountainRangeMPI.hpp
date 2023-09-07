@@ -26,12 +26,12 @@ namespace {
     }
 
     // Read into an address
-    bool try_mpi_file_read_at(auto &&...args) {
+    bool try_mpi_file_read_at(auto &&...args) { // https://tinyurl.com/byusc-parpack
         return try_mpi_file_rw_at<Read>(args...);
     }
 
     // Write from an address
-    bool try_mpi_file_write_at(auto &&...args) {
+    bool try_mpi_file_write_at(auto &&...args) { // https://tinyurl.com/byusc-parpack
         return try_mpi_file_rw_at<Write>(args...);
     }
 
@@ -74,8 +74,8 @@ public:
     }
 
     // Instantiate a MountainRangeMPI by reading from a file
-    MountainRangeMPI(const char *const filename): // TODO: there's a lot going on here, explain std::move and std::make_from_tuple
-            MountainRangeMPI(std::move(std::make_from_tuple<MountainRangeMPI>([filename]{ // ...and the immediately evaluated lambda
+    MountainRangeMPI(const char *const filename):
+            MountainRangeMPI(std::move(std::make_from_tuple<MountainRangeMPI>([filename]{
         // Figure out size and rank
         int mpi_size, mpi_rank;
         MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
@@ -93,6 +93,7 @@ public:
         auto t = try_mpi_file_read_at<value_type>(f, sizeof(size_type)*2);
         // Determine which section of the grid this process is responsible for
         auto [global_first, global_last] = divided_cell_range(n, mpi_rank, mpi_size);
+                // https://tinyurl.com/byusc-structbind
         size_t first = mpi_rank == 0 || global_first == global_last ? 0 : 1;
         size_t last = first + global_last - global_first;
         size_t subsize = last - first;
@@ -106,7 +107,7 @@ public:
         try_mpi_file_read_at(f, h_offset, h.data()+first, last-first);
         // Return tuple to delegate to helper constructor
         return std::make_tuple(r, h, t, n, mpi_size, mpi_rank, global_first, global_last, first, last);
-    }()))) {}
+    }()))) {} // https://tinyurl.com/byusc-lambdai
 
     value_type dsteepness() {
         auto local_ds = ds_section(first, last);
@@ -122,7 +123,7 @@ private:
             MPI_Sendrecv(send, sizeof(*send), MPI_BYTE, neighbor, send_tag,
                          recv, sizeof(*recv), MPI_BYTE, neighbor, recv_tag,
                          MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        };
+        }; // https://tinyurl.com/byusc-lambda
         // Exchange left halo
         if (first != last && mpi_rank > 0) {
             mpi_send_recv_one_value(x.data()+1,    x.data(),    mpi_rank-1, 0, 1);

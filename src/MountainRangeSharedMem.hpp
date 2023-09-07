@@ -40,7 +40,7 @@ public:
         try_read_bytes(s, h.data(), h.size());
         // Return a tuple to be passed to the helper constructor
         return std::make_tuple(r, h, t);
-    }()) {}
+    }()) {} // https://tinyurl.com/byusc-lambdai
 
     // Inherit super constructor
     using MountainRange::MountainRange;

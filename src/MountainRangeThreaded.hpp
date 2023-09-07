@@ -22,10 +22,7 @@ class MountainRangeThreaded: public MountainRangeSharedMem {
         size_t nt;
         auto [ptr, error] = std::from_chars(val, val+std::strlen(val), nt);
         return ptr == val+std::strlen(val) ? nt : 1ul;
-    }();
-
-
-//getenv_as_size_t("SOLVER_NUM_THREADS");
+    }(); // https://tinyurl.com/byusc-lambdai
     CoordinatedLoopingThreadpool ds_workers, step_workers;
     std::atomic<value_type> ds_aggregator;
     std::barrier<> step_barrier, ds_barrier;
@@ -39,13 +36,13 @@ public:
 private:
     // Per-thread step and ds
     constexpr auto ds_this_thread(auto tid) {
-        auto [first, last] = divided_cell_range(h.size(), tid, nthreads);
+        auto [first, last] = divided_cell_range(h.size(), tid, nthreads); // https://tinyurl.com/byusc-structbind
         ds_aggregator += ds_section(first, last);
         ds_barrier.arrive_and_wait();
     }
 
     constexpr void step_this_thread(auto tid) {
-        auto [first, last] = divided_cell_range(h.size(), tid, nthreads);
+        auto [first, last] = divided_cell_range(h.size(), tid, nthreads); // https://tinyurl.com/byusc-structbind
         update_h_section(first, last, iter_time_step);
         step_barrier.arrive_and_wait();
         update_g_section(first, last);
@@ -55,25 +52,21 @@ private:
 
 public:
     // Constructor
-    MountainRangeThreaded(auto &&...args): MountainRangeSharedMem(args...),
+    MountainRangeThreaded(auto &&...args): MountainRangeSharedMem(args...), // https://tinyurl.com/byusc-parpack
                                            ds_workers([this](auto tid){
                                                auto [first, last] = divided_cell_range(h.size(), tid, nthreads);
-                                               //std::cerr << first << ", " << last << std::endl;
-                                               //std::cout << "Calculating ds" << std::endl;
                                                ds_barrier.arrive_and_wait();
                                                ds_aggregator += ds_section(first, last);
                                                ds_barrier.arrive_and_wait();
-                                           }, std::views::iota(0ul, nthreads)),
+                                           }, std::views::iota(0ul, nthreads)), // https://tinyurl.com/byusc-lambda
                                            step_workers([this](auto tid){
                                                auto [first, last] = divided_cell_range(h.size(), tid, nthreads);
-                                               //std::cout << "Updating h" << std::endl;
                                                step_barrier.arrive_and_wait();
                                                update_h_section(first, last, iter_time_step);
                                                step_barrier.arrive_and_wait();
-                                               //std::cout << "Updating g" << std::endl;
                                                update_g_section(first, last);
                                                step_barrier.arrive_and_wait();
-                                           }, std::views::iota(0ul, nthreads)),
+                                           }, std::views::iota(0ul, nthreads)), // https://tinyurl.com/byusc-lambda
                                            step_barrier(nthreads), ds_barrier(nthreads)  {
         step(0);
     }
