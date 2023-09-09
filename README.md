@@ -107,7 +107,7 @@ end
 
 We discretize the derivative of the mountain range's ["steepness"](#steepness-and-its-derivative) at cell $i$ as:
 
-$$\dot{s}_i = \frac{\left( h_{right} - h_{left} \right)\left( g_{right} - g_{left} \right)}{2 n}$$
+$$\dot{s} _ i = \frac{\left( h_{right} - h_{left} \right)\left( g_{right} - g_{left} \right)}{2 n}$$
 
 ...where $left$ and $right$ are defined as [above](#advancing-the-simulation), and $n$ is the number of cells in the `h` and `g` arrays.
 
