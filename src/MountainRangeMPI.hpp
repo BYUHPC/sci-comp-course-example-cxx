@@ -3,8 +3,8 @@
 #include <array>
 #include <tuple>
 #include <mpi.h>
+#include "utils.hpp"
 #include "MountainRange.hpp"
-#include "MountainRangeIOException.hpp"
 
 
 
@@ -51,14 +51,14 @@ namespace {
 
     static int _mpi_rank = -1;
     auto mpi_rank() {
-        if (_mpi_rank != -1) return _mpi_rank;
+        if (_mpi_rank > -1) return _mpi_rank;
         MPI_Comm_rank(MPI_COMM_WORLD, &_mpi_rank);
         return _mpi_rank;
     }
 
     static int _mpi_size = -1;
     auto mpi_size() {
-        if (_mpi_size != -1) return _mpi_size;
+        if (_mpi_size > -1) return _mpi_size;
         MPI_Comm_size(MPI_COMM_WORLD, &_mpi_size);
         return _mpi_size;
     }
@@ -66,26 +66,27 @@ namespace {
 
 
 
-MountainRange::MountainRange(MPI_File &f):
+MountainRange::MountainRange(MPI_File &&f):
         N{[&f]{
             auto N = try_mpi_file_read_at<size_type>(f, 0);
             if (N != 1) throw std::logic_error("this implementation only supports one dimensional mountain ranges");
             return N;
         }()},
         n{try_mpi_file_read_at<size_type>(f, sizeof(size_type))},
-        t{try_mpi_file_read_at<size_type>(f, sizeof(size_type)*2)},
+        t{try_mpi_file_read_at<value_type>(f, sizeof(size_type)*2)},
         r{[&f, this]{
             auto [first, last] = mtn_utils::divided_cell_range(n, mpi_rank(), mpi_size());
-            first = std::max(first-1, 0); // left halo
-            last = std::min(last+1, n);   // right halo
+            first = first == 0 ? first : first-1; // left halo
+            last = std::min(last+1, n); // right halo
             std::vector<value_type> r(last-first);
+            std::cout << "FIRST: " << first << "; LAST: " << last << std::endl;
             try_mpi_file_read_at(f, header_size+sizeof(value_type)*first, r.data(), r.size());
             return r;
         }()},
         h{[&f, this]{
             auto [first, last] = mtn_utils::divided_cell_range(n, mpi_rank(), mpi_size());
-            first = std::max(first-1, 0); // left halo
-            last = std::min(last+1, n);   // right halo
+            first = first == 0 ? first : first-1; // left halo
+            last = std::min(last+1, n); // right halo
             std::vector<value_type> h(last-first);
             try_mpi_file_read_at(f, header_size+sizeof(value_type)*(first+n), h.data(), h.size());
             return h;
@@ -120,9 +121,9 @@ public:
         if (error) throw std::logic_error(std::string("could not open ") + filename);
         // First process writes header
         bool good_write = true; // until proven otherwise
-        if (mpi_rank == 0) good_write &= try_mpi_file_write_at(f, 0,                   &N, 1)
-                                      && try_mpi_file_write_at(f, sizeof(size_type),   &n, 1)
-                                      && try_mpi_file_write_at(f, sizeof(size_type)*2, &t, 1);
+        if (mpi_rank() == 0) good_write &= try_mpi_file_write_at(f, 0,                   &N, 1)
+                                        && try_mpi_file_write_at(f, sizeof(size_type),   &n, 1)
+                                        && try_mpi_file_write_at(f, sizeof(size_type)*2, &t, 1);
         auto [first, last] = mtn_utils::divided_cell_range(n, mpi_rank(), mpi_size());
         if (first != last) good_write &= try_mpi_file_write_at(f, header_size+sizeof(value_type)*first,
                                                                r.data()+(mpi_rank()!=0), last-first)
@@ -137,8 +138,7 @@ public:
         value_type ds, local_ds = 0;
         for_each_cell_this_proc([this, &local_ds](auto i){
             local_ds += ds_cell(i);
-        })
-        for (size_t i=first; i<last; i++) ds += ds_cell(i);
+        });
         MPI_Allreduce(&local_ds, &ds, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
         return ds / n;
     }
@@ -159,17 +159,17 @@ public:
                 mpi_send_recv_one_value(x.data()+1,    x.data(),    mpi_rank()-1, 0, 1);
             }
             // Exchange right halo
-            if (x.size() > 2 && this_process_cells(n)[1] < n) {
+            if (x.size() > 2 && mtn_utils::divided_cell_range(n, mpi_rank(), mpi_size())[1] < n) {
                 mpi_send_recv_one_value(&(x.back())-1, &(x.back()), mpi_rank()+1, 1, 0);
             }
-        }
+        };
         // Update h
         for_each_cell_this_proc([this, time_step](auto i){
             h[i] += time_step * g[i];
         });
         exchange_halos(h);
         // Update g
-        for_each_cell_this_proc([this]{
+        for_each_cell_this_proc([this](auto i){
             g[i] = g_cell(i);
         });
         exchange_halos(g);

@@ -3,10 +3,9 @@
 #include <cstring>
 #include <cmath>
 #include <format>
+#include <iostream>
 #ifdef MPI_VERSION //#if __has_include(<mpi.h>)
 #include <mpi.h>
-#else
-#include <iostream>
 #endif
 
 
@@ -65,6 +64,7 @@ public:
                 auto check_file_name = std::format("chk-{:07.2f}.wo", t).c_str();
                 write(check_file_name);
             }
+            std::cout << "ds is " << dsteepness() << " at " << t << std::endl;
         }
         return t;
     }
@@ -80,7 +80,7 @@ public:
 
     // Helpers for step and dsteepness
     template <bool BoundsCheck=true>
-    constexpr static value_type g_cell(const auto &r, const auto &h, auto size, auto i) {
+    constexpr static value_type g_cell(const auto r, const auto h, auto size, auto i) {
         auto left = i, right = i;
         if constexpr (BoundsCheck) {
             if (i > 0) left -= 1;
@@ -93,7 +93,7 @@ public:
     constexpr value_type g_cell(auto i) const { return g_cell<BoundsCheck>(r, h, h.size(), i); }
 
     template <bool BoundsCheck=true>
-    constexpr static value_type ds_cell(const auto &h, const auto &g, auto size, auto i) {
+    constexpr static value_type ds_cell(const auto h, const auto g, auto size, auto i) {
         auto left = i, right = i;
         if constexpr (BoundsCheck) {
             if (i > 0) left -= 1;

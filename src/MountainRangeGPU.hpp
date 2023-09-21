@@ -40,7 +40,7 @@ public:
         std::for_each(std::execution::par_unseq, first+1, last-1, [r=r.data(), h=h.data(), g=g.data(), size=h.size()](auto i){
             g[i] = g_cell<false>(r, h, size, i); // false turns off bounds checking
         }); // https://tinyurl.com/byusc-lambda
-        g.back() = g_cell(g.size()-1);
+        g[g.size()-1] = g_cell(g.size()-1);
         // Update simulation time
         t += time_step;
         return t;
