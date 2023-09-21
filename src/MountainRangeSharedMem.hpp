@@ -1,3 +1,9 @@
+#include <fstream>
+#include "binary_io.hpp"
+#include "MountainRange.hpp"
+
+
+
 namespace {
     template <class T>
     auto try_read_vector(std::istream &s, auto size) {
@@ -17,12 +23,12 @@ MountainRange::MountainRange(std::istream &&s):
         }()},
         n{try_read_bytes<decltype(n)>(s)},
         t{try_read_bytes<decltype(t)>(s)},
-        r{try_read_vector<value_type>(s, n)},
-        h{/* begin immediately invoked lambda */[&s]{
+        r(try_read_vector<value_type>(s, n)),
+        h(/* begin immediately invoked lambda */[this, &s]{
             auto h = try_read_vector<value_type>(s, n);
-            if (s.peek() != traits::eof()) throw std::logic_error("extra bytes found after the end of height");
+            //if (s.peek() != EOF) throw std::logic_error("extra bytes found after the end of height");
             return h;
-        }()/*  end immediately invoked lambda */},
+        }()/*  end immediately invoked lambda */),
         g(h.size()) {}
 
 
@@ -35,11 +41,10 @@ public:
 
 
 
-    bool write(const char *const filename) {
+    bool write(const char *const filename) const {
         auto s = std::ofstream(filename);
-        size_type ndims = 1, n = h.size();
                 // Write header
-        return (try_write_bytes(s, &ndims, &n, &t) &&
+        return (try_write_bytes(s, &N, &n, &t) &&
                 // Write uplift rate
                 try_write_bytes(s, r.data(), n) &&
                 // Write height

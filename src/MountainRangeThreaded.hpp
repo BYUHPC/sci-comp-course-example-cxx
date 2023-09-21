@@ -9,8 +9,9 @@
 #include <semaphore>
 #include <atomic>
 #include <barrier>
-#include "MountainRangeSharedMem.hpp"
 #include "CoordinatedLoopingThreadpool.hpp"
+#include "utils.hpp"
+#include "MountainRangeSharedMem.hpp"
 
 
 
@@ -37,7 +38,7 @@ public:
             ds_workers([this](auto tid){ // https://tinyurl.com/byusc-lambda
                 auto [first, last] = mtn_utils::divided_cell_range(h.size(), tid, nthreads);
                 ds_barrier.arrive_and_wait();
-                for (size_t i=first; i<last; i++) ds_aggregator += ds_cell(i, iter_time_step);
+                for (size_t i=first; i<last; i++) ds_aggregator += ds_cell(i);
                 ds_barrier.arrive_and_wait();
             }, std::views::iota(0ul, nthreads)),
             step_workers([this](auto tid){ // https://tinyurl.com/byusc-lambda

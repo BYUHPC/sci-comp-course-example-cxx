@@ -1,6 +1,7 @@
 #include <iostream>
 #include <numeric>
 #include <ranges>
+#include <sstream>
 #include "MountainRangeOpenMP.hpp"
 
 

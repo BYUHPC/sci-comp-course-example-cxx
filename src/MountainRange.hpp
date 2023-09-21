@@ -1,4 +1,9 @@
-#if __has_include(<mpi.h>)
+#include <vector>
+#include <charconv>
+#include <cstring>
+#include <cmath>
+#include <format>
+#ifdef MPI_VERSION //#if __has_include(<mpi.h>)
 #include <mpi.h>
 #else
 #include <iostream>
@@ -8,6 +13,7 @@
 
 
 class MountainRange {
+public:
     using value_type = double;
     using size_type = size_t;
 protected:
@@ -31,13 +37,13 @@ public:
 
     // Constructors
     // From an uplift rate, height, and time
-    MountainRange(const decltype(r) &r, const decltype(h) &h, decltype(t) t): r(r), h(h), g(h.size()), t{t} {}
+    MountainRange(const decltype(r) &r, const decltype(h) &h, decltype(t) t): N{1}, n{r.size()}, r(r), h(h), g(h.size()), t{t} {}
 
     // From an uplift rate; simulation time and height are initialized to zero
     MountainRange(const decltype(r) &r): MountainRange(r, decltype(h)(r.size()), 0) {}
 
     // From a std::istream (if non-MPI) or an MPI_File (if MPI)
-#if __has_include(<mpi.h>)
+#ifdef MPI_VERSION //#if __has_include(<mpi.h>)
     MountainRange(MPI_File &&f);
 #else
     MountainRange(std::istream &&s);
@@ -74,25 +80,29 @@ public:
 
     // Helpers for step and dsteepness
     template <bool BoundsCheck=true>
-    value_type g_cell(auto i, const auto &R=r, const auto &H=h) {
+    constexpr static value_type g_cell(const auto &r, const auto &h, auto size, auto i) {
         auto left = i, right = i;
         if constexpr (BoundsCheck) {
             if (i > 0) left -= 1;
-            if (i < g.size()-1) right += 1;
+            if (i < size-1) right += 1;
         }
-        auto L = (H[left] + H[right]) / 2 - H[i];
-        return R[i] = pow(H[i], 3) + L;
+        auto L = (h[left] + h[right]) / 2 - h[i];
+        return r[i] - pow(h[i], 3) + L;
     }
+    template <bool BoundsCheck=true>
+    constexpr value_type g_cell(auto i) const { return g_cell<BoundsCheck>(r, h, h.size(), i); }
 
     template <bool BoundsCheck=true>
-    value_type ds_cell(auto i, const auto &H=h, const auto &G=g) {
+    constexpr static value_type ds_cell(const auto &h, const auto &g, auto size, auto i) {
         auto left = i, right = i;
         if constexpr (BoundsCheck) {
             if (i > 0) left -= 1;
-            if (i < g.size()-1) right += 1;
+            if (i < size-1) right += 1;
         }
-        return (H[right] - H[left]) * (G[right] - G[left]) / 2;
+        return (h[right] - h[left]) * (g[right] - g[left]) / 2;
     }
+    template <bool BoundsCheck=true>
+    constexpr value_type ds_cell(auto i) const { return ds_cell(h, g, h.size(), i); }
 
 
 

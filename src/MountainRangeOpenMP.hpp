@@ -1,3 +1,7 @@
+#include "MountainRangeSharedMem.hpp"
+
+
+
 class MountainRangeOpenMP: public MountainRangeSharedMem {
 public:
     MountainRangeOpenMP(auto &&...args): MountainRangeSharedMem(args...) { // https://tinyurl.com/byusc-parpack
@@ -15,6 +19,7 @@ public:
         for (size_t i=0; i<g.size(); i++) g[i] = g_cell(i);
         // Increment time step
         t += time_step;
+        return t;
     }
 
 
@@ -22,7 +27,7 @@ public:
     value_type dsteepness() {
         value_type ds = 0;
         #pragma omp parallel for reduction(+:ds)
-        for (size_t i=0; i<h.size(); i++) ds += ds_cell(i, time_step);
+        for (size_t i=0; i<h.size(); i++) ds += ds_cell(i);
         return ds / h.size();
     }
 };
