@@ -19,7 +19,7 @@ namespace {
             else                      return MPI_File_write_at(args...);
         }(f, offset, data, sizeof(*data)*size, MPI_BYTE, MPI_STATUS_IGNORE);
         if (error) {
-            throw MountainRangeIOException(std::string("failed MPI_File_") + (RW == Read ? "read" : "write") + "_at");
+            throw std::logic_error(std::string("failed MPI_File_") + (RW == Read ? "read" : "write") + "_at");
             return false;
         }
         return true;
@@ -42,7 +42,55 @@ namespace {
         try_mpi_file_read_at(f, offset, &data, 1);
         return data;
     }
+
+
+
+    constexpr const size_t header_size = sizeof(MountainRange::size_type) * 2 + sizeof(MountainRange::value_type);
+
+
+
+    static int _mpi_rank = -1;
+    auto mpi_rank() {
+        if (_mpi_rank != -1) return _mpi_rank;
+        MPI_Comm_rank(MPI_COMM_WORLD, &_mpi_rank);
+        return _mpi_rank;
+    }
+
+    static int _mpi_size = -1;
+    auto mpi_size() {
+        if (_mpi_size != -1) return _mpi_size;
+        MPI_Comm_size(MPI_COMM_WORLD, &_mpi_size);
+        return _mpi_size;
+    }
 }
+
+
+
+MountainRange::MountainRange(MPI_File &f):
+        N{[&f]{
+            auto N = try_mpi_file_read_at<size_type>(f, 0);
+            if (N != 1) throw std::logic_error("this implementation only supports one dimensional mountain ranges");
+            return N;
+        }()},
+        n{try_mpi_file_read_at<size_type>(f, sizeof(size_type))},
+        t{try_mpi_file_read_at<size_type>(f, sizeof(size_type)*2)},
+        r{[&f, this]{
+            auto [first, last] = mtn_utils::divided_cell_range(n, mpi_rank(), mpi_size());
+            first = std::max(first-1, 0); // left halo
+            last = std::min(last+1, n);   // right halo
+            std::vector<value_type> r(last-first);
+            try_mpi_file_read_at(f, header_size+sizeof(value_type)*first, r.data(), r.size());
+            return r;
+        }()},
+        h{[&f, this]{
+            auto [first, last] = mtn_utils::divided_cell_range(n, mpi_rank(), mpi_size());
+            first = std::max(first-1, 0); // left halo
+            last = std::min(last+1, n);   // right halo
+            std::vector<value_type> h(last-first);
+            try_mpi_file_read_at(f, header_size+sizeof(value_type)*(first+n), h.data(), h.size());
+            return h;
+        }()},
+        g(h.size()) {}
 
 
 
@@ -54,117 +102,89 @@ namespace {
  * the user are calls to MPI_Init and MPI_Finalize.
  */
 class MountainRangeMPI: public MountainRange {
-    // Members
-    static constexpr const size_t header_size = sizeof(size_type) * 2 + sizeof(value_type);
-    const size_type n;                         // total size of the mountain range
-    const int mpi_size, mpi_rank;              // MPI size and rank
-    const size_type global_first, global_last, // absolute first/last cells that this process manages
-                    first, last;               // relative (to r, h, and g) first/last cells that this process manages
-
-
-
 public:
-    // Constructors
-    // Initialize from all members, including supertype members; used in the filename constructor
-    MountainRangeMPI(const auto &r, const auto &h, auto t, auto n, auto mpi_size, auto mpi_rank,
-                     auto global_first, auto global_last, auto first, auto last):
-            MountainRange(r, h, t), n{n}, mpi_size{mpi_size}, mpi_rank{mpi_rank},
-            global_first{global_first}, global_last{global_last}, first{first}, last{last} {
+    // Constructor
+    MountainRangeMPI(const char *const filename):
+            MountainRange([filename]{
+                MPI_File f;
+                auto open_error = MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_RDONLY, MPI_INFO_NULL, &f);
+                if (open_error) throw std::logic_error(std::string("could not open ") + filename);
+                return f;
+            }()) {
         step(0);
     }
 
-    // Instantiate a MountainRangeMPI by reading from a file
-    MountainRangeMPI(const char *const filename):
-            MountainRangeMPI(std::move(std::make_from_tuple<MountainRangeMPI>([filename]{
-        // Figure out size and rank
-        int mpi_size, mpi_rank;
-        MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
-        MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
-        // Make sure the specified file is at least 12 bytes
-        check_file_size(filename);
-        // Open input file
+    bool write(const char *const filename) const {
         MPI_File f;
-        auto open_error = MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_RDONLY, MPI_INFO_NULL, &f);
-        if (open_error) throw MountainRangeIOException(std::string("could not open ") + filename);
-        // Read header
-        auto ndims = try_mpi_file_read_at<size_type>(f, 0);
-        if (ndims != 1) throw MountainRangeIOException("this implementation only accepts 1-D mountain ranges");
-        auto n = try_mpi_file_read_at<size_type>(f, sizeof(size_type));
-        auto t = try_mpi_file_read_at<value_type>(f, sizeof(size_type)*2);
-        // Determine which section of the grid this process is responsible for
-        auto [global_first, global_last] = divided_cell_range(n, mpi_rank, mpi_size);
-                // https://tinyurl.com/byusc-structbind
-        size_t first = mpi_rank == 0 || global_first == global_last ? 0 : 1;
-        size_t last = first + global_last - global_first;
-        size_t subsize = last - first;
-        if (mpi_rank > 0 && first != last) subsize += 1; // left edge
-        if (global_last != n) subsize += 1;              // right edge
-        // Read body
-        std::vector<value_type> r(subsize), h(subsize);
-        auto r_offset = header_size + sizeof(value_type) * global_first;
-        auto h_offset = r_offset + sizeof(value_type) * n;
-        try_mpi_file_read_at(f, r_offset, r.data()+first, last-first);
-        try_mpi_file_read_at(f, h_offset, h.data()+first, last-first);
-        // Return tuple to delegate to helper constructor
-        return std::make_tuple(r, h, t, n, mpi_size, mpi_rank, global_first, global_last, first, last);
-    }()))) {} // https://tinyurl.com/byusc-lambdai
+        auto error = MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &f);
+        if (error) throw std::logic_error(std::string("could not open ") + filename);
+        // First process writes header
+        bool good_write = true; // until proven otherwise
+        if (mpi_rank == 0) good_write &= try_mpi_file_write_at(f, 0,                   &N, 1)
+                                      && try_mpi_file_write_at(f, sizeof(size_type),   &n, 1)
+                                      && try_mpi_file_write_at(f, sizeof(size_type)*2, &t, 1);
+        auto [first, last] = mtn_utils::divided_cell_range(n, mpi_rank(), mpi_size());
+        if (first != last) good_write &= try_mpi_file_write_at(f, header_size+sizeof(value_type)*first,
+                                                               r.data()+(mpi_rank()!=0), last-first)
+                                      && try_mpi_file_write_at(f, header_size+sizeof(value_type)*(first+n),
+                                                               h.data()+(mpi_rank()!=0), last-first);
+        return good_write;
+    }
+
+
 
     value_type dsteepness() {
-        auto local_ds = ds_section(first, last);
-        value_type ds;
+        value_type ds, local_ds = 0;
+        for_each_cell_this_proc([this, &local_ds](auto i){
+            local_ds += ds_cell(i);
+        })
+        for (size_t i=first; i<last; i++) ds += ds_cell(i);
         MPI_Allreduce(&local_ds, &ds, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
         return ds / n;
     }
 
-private:
-    void exchange_halos(auto &x) {
-        // Convenience wrapper for MPI_Sendrecv
-        auto mpi_send_recv_one_value = [](auto *send, auto *recv, int neighbor, int send_tag=0, int recv_tag=0){
-            MPI_Sendrecv(send, sizeof(*send), MPI_BYTE, neighbor, send_tag,
-                         recv, sizeof(*recv), MPI_BYTE, neighbor, recv_tag,
-                         MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        }; // https://tinyurl.com/byusc-lambda
-        // Exchange left halo
-        if (first != last && mpi_rank > 0) {
-            mpi_send_recv_one_value(x.data()+1,    x.data(),    mpi_rank-1, 0, 1);
-        }
-        // Exchange right halo
-        if (first != last && global_last != n) {
-            mpi_send_recv_one_value(&(x.back())-1, &(x.back()), mpi_rank+1, 1, 0);
-        }
-    }
 
-public:
+
     value_type step(value_type time_step) {
+        // Halo exchange function
+        auto exchange_halos = [this](auto &x) {
+            // Convenience wrapper for MPI_Sendrecv
+            auto mpi_send_recv_one_value = [](auto *send, auto *recv, int neighbor, int send_tag=0, int recv_tag=0){
+                MPI_Sendrecv(send, sizeof(*send), MPI_BYTE, neighbor, send_tag,
+                             recv, sizeof(*recv), MPI_BYTE, neighbor, recv_tag,
+                             MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            }; // https://tinyurl.com/byusc-lambda
+            // Exchange left halo
+            if (x.size() > 2 && mpi_rank() > 0) {
+                mpi_send_recv_one_value(x.data()+1,    x.data(),    mpi_rank()-1, 0, 1);
+            }
+            // Exchange right halo
+            if (x.size() > 2 && this_process_cells(n)[1] < n) {
+                mpi_send_recv_one_value(&(x.back())-1, &(x.back()), mpi_rank()+1, 1, 0);
+            }
+        }
         // Update h
-        update_h_section(first, last, time_step);
+        for_each_cell_this_proc([this, time_step](auto i){
+            h[i] += time_step * g[i];
+        });
         exchange_halos(h);
         // Update g
-        update_g_section(first, last);
+        for_each_cell_this_proc([this]{
+            g[i] = g_cell(i);
+        });
         exchange_halos(g);
         // Increment and return t
         t += time_step;
         return t;
     }
 
-    bool write(const char *const filename) const {
-        MPI_File f;
-        auto error = MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &f);
-        if (error) throw MountainRangeIOException(std::string("could not open ") + filename);
-        // First process writes header
-        bool good_write = true; // until proven otherwise
-        size_type ndims = 1;
-        if (mpi_rank == 0) {
-            good_write &= try_mpi_file_write_at(f, 0,                   &ndims, 1) &&
-                          try_mpi_file_write_at(f, sizeof(size_type),   &n,     1) &&
-                          try_mpi_file_write_at(f, sizeof(size_type)*2, &t,     1);
-        }
-        // All processes write their portion of the body
-        auto r_offset = header_size + sizeof(value_type) * global_first;
-        auto h_offset = r_offset + sizeof(value_type) * n;
-        if (first != last) good_write &= try_mpi_file_write_at(f, r_offset, r.data()+first, last-first) &&
-                                         try_mpi_file_write_at(f, h_offset, h.data()+first, last-first);
-        return good_write;
+
+
+private:
+    void for_each_cell_this_proc(auto F) {
+        size_t first = mpi_rank() != 0,
+               last  = n == mtn_utils::divided_cell_range(n, mpi_rank(), mpi_size())[1] ? h.size() : h.size()-1;
+        for (auto i=first; i<last; i++) F(i);
     }
 };
 

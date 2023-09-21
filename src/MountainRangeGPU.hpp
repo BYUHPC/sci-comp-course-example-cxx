@@ -36,11 +36,11 @@ public:
             h[i] += time_step * g[i];
         }); // https://tinyurl.com/byusc-lambda
         // Update g
-        update_g_cell<First>(r, h, g, 0);
+        g[0] = g_cell(0);
         std::for_each(std::execution::par_unseq, first+1, last-1, [r=r.data(), h=h.data(), g=g.data()](auto i){
-            update_g_cell<Middle>(r, h, g, i);
+            g[i] = g_cell<false>(i, r, h); // false turns off bounds checking
         }); // https://tinyurl.com/byusc-lambda
-        update_g_cell<Last>(r, h, g, h.size()-1);
+        g.back() = g_cell(g.size()-1);
         // Update simulation time
         t += time_step;
         return t;
@@ -48,13 +48,13 @@ public:
 
     value_type dsteepness() {
         auto [first, last] = index_range(h); // https://tinyurl.com/byusc-structbind
-        auto ds = ds_cell<First>(h, g, 0);
+        auto ds = ds_cell(0);
         ds += std::transform_reduce(std::execution::par_unseq, first+1, last-1, value_type{0},
                                     [](auto a, auto b){ return a + b; }, // reduce
                                     [h=h.data(), g=g.data()](auto i){    // transform
-                                        return ds_cell<Middle>(h, g, i);
+                                        return ds_cell<false>(i, h, g); // false turns off bounds checking
                                     }); // https://tinyurl.com/byusc-lambda
-        ds += ds_cell<Last>(h, g, h.size()-1);
+        ds += ds_cell(h.size()-1);
         return ds / h.size();
     }
 };

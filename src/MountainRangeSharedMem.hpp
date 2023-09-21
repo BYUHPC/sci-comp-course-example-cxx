@@ -10,11 +10,12 @@ namespace {
 
 
 MountainRange::MountainRange(std::istream &&s):
-        n{/* begin immediately invoked lambda */[&s]{
-            auto ndims = try_read_bytes<size_type>(s);
-            if (ndims != 1) throw std::logic_error("this implementation only handles one-dimensional mountain ranges");
-            return try_read_bytes<decltype(n)>(s);
-        }()/*  end immediately invoked lambda */},
+        N{[&s]{
+            auto N = try_read_bytes<size_type>(s);
+            if (N != 1) throw std::logic_error("this implementation only supports one-dimensional mountain ranges");
+            return N;
+        }()},
+        n{try_read_bytes<decltype(n)>(s)},
         t{try_read_bytes<decltype(t)>(s)},
         r{try_read_vector<value_type>(s, n)},
         h{/* begin immediately invoked lambda */[&s]{

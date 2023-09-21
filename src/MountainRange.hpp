@@ -1,3 +1,12 @@
+#if __has_include(<mpi.h>)
+#include <mpi.h>
+#else
+#include <iostream>
+#endif
+
+
+
+
 class MountainRange {
     using value_type = double;
     using size_type = size_t;
@@ -7,14 +16,16 @@ protected:
 
 
     // Members and accessors
+    const size_type N, n;            // number of dimensions and size
     value_type t;                    // simulation time
     const std::vector<value_type> r; // uplift rate
     std::vector<value_type> h, g;    // height and growth rate
 
 public:
-    value_type  sim_time()    const { return t; }
-    const auto &uplift_rate() const { return r; }
-    const auto &height()      const { return h; }
+    size_t     size()         const { return n; }
+    value_type sim_time()     const { return t; }
+    auto       &uplift_rate() const { return r; }
+    auto       &height()      const { return h; }
 
 
 
@@ -27,10 +38,8 @@ public:
 
     // From a std::istream (if non-MPI) or an MPI_File (if MPI)
 #if __has_include(<mpi.h>)
-#include <mpi.h>
-    MountainRange(MPI_File &f);
+    MountainRange(MPI_File &&f);
 #else
-#include <iostream>
     MountainRange(std::istream &&s);
 #endif
 
@@ -64,16 +73,25 @@ public:
 
 
     // Helpers for step and dsteepness
-    value_type g_cell(auto i) {
-        auto left  = std::max(i-1, 0),
-             right = std::min(i+1, g.size()-1);
-        auto L = (h[left] + h[right]) / 2 - h[i];
-        return r[i] = pow(h[i], 3) + L;
+    template <bool BoundsCheck=true>
+    value_type g_cell(auto i, const auto &R=r, const auto &H=h) {
+        auto left = i, right = i;
+        if constexpr (BoundsCheck) {
+            if (i > 0) left -= 1;
+            if (i < g.size()-1) right += 1;
+        }
+        auto L = (H[left] + H[right]) / 2 - H[i];
+        return R[i] = pow(H[i], 3) + L;
     }
-    value_type ds_cell(auto i, auto time_step) {
-        auto left  = std::max(i-1, 0),
-             right = std::min(i+1, h.size()-1);
-        return (h[right] - h[left]) * (g[right] - g[left]) / 2;
+
+    template <bool BoundsCheck=true>
+    value_type ds_cell(auto i, const auto &H=h, const auto &G=g) {
+        auto left = i, right = i;
+        if constexpr (BoundsCheck) {
+            if (i > 0) left -= 1;
+            if (i < g.size()-1) right += 1;
+        }
+        return (H[right] - H[left]) * (G[right] - G[left]) / 2;
     }
 
 
