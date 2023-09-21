@@ -1,43 +1,6 @@
-#ifndef MOUNTAIN_RANGE_H
-#define MOUNTAIN_RANGE_H
-#include <cstdint>
-#include <vector>
-#include <tuple>
-#include <cmath>
-#include <filesystem>
-#include <fstream>
-#include "binary_io.hpp"
-#include "MountainRangeIOException.hpp"
-
-
-
-/* MountainRange is the abstract base class from which all concrete mountain range classes inherit
- *
- * MEMBERS AND ACCESSORS
- * - dt: the time step, a static constant
- * - t: the current simulation time; access with sim_time()
- * - r: the uplift rate, a vector; access with uplift_rate()
- * - h: the current height, a vector; access with height()
- * - g: the current growth rate, a vector
- *
- * PUBLIC CONCRETE METHODS
- * - step(): step the simulation forward in time by dt and return the simulation time after the step
- * - solve(): run step() repeatedly untill dsteepness() drops below zero, returning the final simulation time
- * 
- * PUBLIC VIRTUAL METHODS
- * - step(time_step): step the simulation forward in time by time_step and return the simulation time after the step
- * - dsteepness(): return the derivative of the current steepness of the mountain range
- * - write(filename): write the mountain range to a file in binary, returning true on success or false on failure
- * 
- * C++ does not have virtual constructors so this can't be enforced, but subclasses are meant to implement a constructor
- * that takes a filename (const char *const) as its only argument and reads the binary mountain range from that file.
- * 
- * The last call of subclass constructors should be `step(0)` to initialize g.
- */
 class MountainRange {
-public:
     using value_type = double;
-    using size_type = uint64_t;
+    using size_type = size_t;
 protected:
     static constexpr const value_type dt = 0.01;
 
@@ -62,126 +25,59 @@ public:
     // From an uplift rate; simulation time and height are initialized to zero
     MountainRange(const decltype(r) &r): MountainRange(r, decltype(h)(r.size()), 0) {}
 
+    // From a std::istream (if non-MPI) or an MPI_File (if MPI)
+#if __has_include(<mpi.h>)
+#include <mpi.h>
+    MountainRange(MPI_File &f);
+#else
+#include <iostream>
+    MountainRange(std::istream &&s);
+#endif
+
 
 
     // Step the simulation forward in time until the steepness derivative drops below zero
     value_type solve() {
+        // Read checkpoint interval from environment
+        value_type checkpoint_interval = 0;
+        auto INTVL = std::getenv("INTVL");
+        if (INTVL != nullptr) std::from_chars(INTVL, INTVL+std::strlen(INTVL), checkpoint_interval);
+        // Solve loop
         while (dsteepness() >= 0) {
             step();
+            // Checkpoint if requested
+            if (checkpoint_interval > 0 && fmod(t+dt/5, checkpoint_interval) < 2*dt/5) {
+                auto check_file_name = std::format("chk-{:07.2f}.wo", t).c_str();
+                write(check_file_name);
+            }
         }
         return t;
     }
 
 
-
-
-protected:
-    // Update functionality
-    // enum to indicate whether the cell being operated on is the first, last, or a middle cell
-    enum FirstMiddleLast { First, Middle, Last };
-
-    // Update one cell of g, minding boundary conditions; static for use in MountainRangeGPU
-    template <FirstMiddleLast FML=Middle>
-    constexpr static void update_g_cell(const auto &r, const auto &h, auto &g, auto i) {
-        auto L = -h[i];
-        if constexpr (FML == First) L += (h[i  ] + h[i+1]) / 2;
-        else if      (FML == Last ) L += (h[i-1] + h[i  ]) / 2;
-        else                        L += (h[i-1] + h[i+1]) / 2;
-        g[i] = r[i] - pow(h[i], 3) + L;
-    }
-
-    // Update a section of g, minding boundary conditions
-    void update_g_section(auto first, auto last) {
-        if (first == last) return;
-        first == 0       ? update_g_cell<First>(r, h, g, first)  : update_g_cell<Middle>(r, h, g, first);
-        #pragma omp parallel for
-        for (auto i=first+1; i<last-1; i++) {
-            update_g_cell<Middle>(r, h, g, i);
-        }
-        last == h.size() ? update_g_cell<Last >(r, h, g, last-1) : update_g_cell<Middle>(r, h, g, last-1);
-    }
-
-    // Update a section of h
-    void update_h_section(auto first, auto last, auto time_step=dt) {
-        #pragma omp parallel for
-        for (auto i=first; i<last; i++) {
-            h[i] += time_step * g[i];
-        }
-    }
-
-public:
-    // Step the mountain range forward in time, dt seconds by default
+    
+    // Step and dsteepness are to be implemented by child classes
     virtual value_type step(decltype(t) time_step) = 0;
     value_type step() { return step(dt); }
+    virtual value_type dsteepness() = 0; // can't be const because threads
 
 
 
-protected:
-    // Steepness derivative functionality
-    // Get the steepness derivative of one cell, minding boundary conditions; static for use in MountainRangeGPU
-    template <FirstMiddleLast FML=Middle>
-    constexpr static value_type ds_cell(const auto &h, const auto &g, auto i) {
-        auto left = i, right = i;
-        if constexpr (FML != First) left  -= 1;
-        if constexpr (FML != Last ) right += 1;
-        auto ds = (h[right] - h[left]) * (g[right] - g[left]) / 2;
-        return ds;
+    // Helpers for step and dsteepness
+    value_type g_cell(auto i) {
+        auto left  = std::max(i-1, 0),
+             right = std::min(i+1, g.size()-1);
+        auto L = (h[left] + h[right]) / 2 - h[i];
+        return r[i] = pow(h[i], 3) + L;
+    }
+    value_type ds_cell(auto i, auto time_step) {
+        auto left  = std::max(i-1, 0),
+             right = std::min(i+1, h.size()-1);
+        return (h[right] - h[left]) * (g[right] - g[left]) / 2;
     }
 
-    // Return the sum of the derivative of steepness of each cell for a section of the mountain range
-    value_type ds_section(auto first, auto last) const {
-        if (first == last) return 0;
-        auto ds = first == 0        ? ds_cell<First>(h, g, first)  : ds_cell<Middle>(h, g, first);
-        #pragma omp parallel for reduction(+:ds)
-        for (auto i=first+1; i<last-1; i++) {
-            ds += ds_cell<Middle>(h, g, i);
-        }
-        ds     += last  == h.size() ? ds_cell<Last >(h, g, last-1) : ds_cell<Middle>(h, g, last-1);
-        return ds;
-    }
-
-public:
-    // Return dsteepness for the whole mountain range
-    virtual value_type dsteepness() = 0;
 
 
-
-    // I/O
-    // Write the mountain range to a file in binary
+    // Write function to be implemented by child classes
     virtual bool write(const char *const filename) const = 0;
-
-protected:
-    // Throw a MountainRangeIOException if the input file's size isn't as expected given mountain range length n
-    static void check_file_size(const char *const filename, size_t n=0) {
-        auto header_size = sizeof(size_type) * 2 + sizeof(value_type);
-        try {
-            auto file_length = std::filesystem::file_size(std::filesystem::path(filename));
-            if (file_length < header_size) {
-                throw MountainRangeIOException(std::string(filename) + " is too short to contain a mountain range");
-            }
-            if (!n) return;
-            auto expected_file_length = header_size + sizeof(value_type) * n * 2;
-            if (file_length != expected_file_length) {
-                throw MountainRangeIOException(std::string(filename) + " is not a valid mountain range data file");
-            }
-        } catch (const std::filesystem::filesystem_error &e) { // If a file descriptor is being used, for example
-            return;
-        }
-    }
-
-
-
-    // Split a mountain range of a given length among nproc processes, with first being the first cell that process
-    // "rank" is in charge of and last being the last; rank ranges from 0 to nprocs-1
-    constexpr static auto divided_cell_range(auto length, auto rank, auto nprocs) {
-        auto ceil_div = [](auto num, auto den){ return num / den + (num % den != 0); };
-        auto cells_per_proc = ceil_div(length, nprocs);
-        auto first = std::min(cells_per_proc*rank, length);
-        auto last = std::min(first+cells_per_proc, length);
-        return std::array{first, last};
-    }
 };
-
-
-
-#endif

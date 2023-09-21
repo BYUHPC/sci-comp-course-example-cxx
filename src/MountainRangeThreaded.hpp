@@ -16,13 +16,7 @@
 
 class MountainRangeThreaded: public MountainRangeSharedMem {
     // Members
-    const size_t nthreads = []{
-        auto val = std::getenv("SOLVER_NUM_THREADS");
-        if (val == nullptr) return 1ul;
-        size_t nt;
-        auto [ptr, error] = std::from_chars(val, val+std::strlen(val), nt);
-        return ptr == val+std::strlen(val) ? nt : 1ul;
-    }(); // https://tinyurl.com/byusc-lambdai
+    const size_type nthreads;
     CoordinatedLoopingThreadpool ds_workers, step_workers;
     std::atomic<value_type> ds_aggregator;
     std::barrier<> step_barrier, ds_barrier;
@@ -33,52 +27,40 @@ public:
 
 
 
-private:
-    // Per-thread step and ds
-    constexpr auto ds_this_thread(auto tid) {
-        auto [first, last] = divided_cell_range(h.size(), tid, nthreads); // https://tinyurl.com/byusc-structbind
-        ds_aggregator += ds_section(first, last);
-        ds_barrier.arrive_and_wait();
-    }
-
-    constexpr void step_this_thread(auto tid) {
-        auto [first, last] = divided_cell_range(h.size(), tid, nthreads); // https://tinyurl.com/byusc-structbind
-        update_h_section(first, last, iter_time_step);
-        step_barrier.arrive_and_wait();
-        update_g_section(first, last);
-    }
-
-
-
-public:
-    // Constructor
     MountainRangeThreaded(auto &&...args): MountainRangeSharedMem(args...), // https://tinyurl.com/byusc-parpack
-                                           ds_workers([this](auto tid){
-                                               auto [first, last] = divided_cell_range(h.size(), tid, nthreads);
-                                               ds_barrier.arrive_and_wait();
-                                               ds_aggregator += ds_section(first, last);
-                                               ds_barrier.arrive_and_wait();
-                                           }, std::views::iota(0ul, nthreads)), // https://tinyurl.com/byusc-lambda
-                                           step_workers([this](auto tid){
-                                               auto [first, last] = divided_cell_range(h.size(), tid, nthreads);
-                                               step_barrier.arrive_and_wait();
-                                               update_h_section(first, last, iter_time_step);
-                                               step_barrier.arrive_and_wait();
-                                               update_g_section(first, last);
-                                               step_barrier.arrive_and_wait();
-                                           }, std::views::iota(0ul, nthreads)), // https://tinyurl.com/byusc-lambda
-                                           step_barrier(nthreads), ds_barrier(nthreads)  {
-        step(0);
+            nthreads{[]{ // https://tinyurl.com/byusc-lambdai
+                size_type nthreads = 1;
+                auto nthreads_str = std::getenv("SOLVER_NUM_THREADS");
+                if (nthreads_str != nullptr) std::from_chars(nthreads_str, nthreads_str+std::strlen(nthreads_str), nthreads);
+                return nthreads;
+            }()},
+            ds_workers([this](auto tid){ // https://tinyurl.com/byusc-lambda
+                auto [first, last] = mtn_utils::divided_cell_range(h.size(), tid, nthreads);
+                ds_barrier.arrive_and_wait();
+                for (size_t i=first; i<last; i++) ds_aggregator += ds_cell(i, iter_time_step);
+                ds_barrier.arrive_and_wait();
+            }, std::views::iota(0ul, nthreads)),
+            step_workers([this](auto tid){ // https://tinyurl.com/byusc-lambda
+                auto [first, last] = mtn_utils::divided_cell_range(h.size(), tid, nthreads);
+                step_barrier.arrive_and_wait();
+                for (size_t i=first; i<last; i++) h[i] += iter_time_step * g[i];
+                step_barrier.arrive_and_wait();
+                for (size_t i=first; i<last; i++) g[i] = g_cell(i);
+                step_barrier.arrive_and_wait();
+            }, std::views::iota(0ul, nthreads)),
+            step_barrier(nthreads), ds_barrier(nthreads)  {
+        step(0); // initialize g
     }
 
 
 
-    // User-facing functions
     value_type dsteepness() {
         ds_aggregator = 0;
         ds_workers.trigger_sync();
         return ds_aggregator / h.size();
     }
+
+
 
     value_type step(value_type time_step) {
         iter_time_step = time_step;

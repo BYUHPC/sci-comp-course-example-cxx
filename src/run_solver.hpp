@@ -1,3 +1,4 @@
+
 #ifndef RUN_SOLVER_H
 #define RUN_SOLVER_H
 
@@ -16,7 +17,7 @@
  */
 template <class MtnRange>
 int run_solver(int argc, char **argv, bool verbose=true) {
-    // Usage
+    // Function to print a help message
     auto help = [=](){
         std::cout << "Usage: " << argv[0] << " infile outfile" << std::endl
                   << "Read a mountain rante from infile, solve it, and write it to outfile." << std::endl;
@@ -53,10 +54,12 @@ int run_solver(int argc, char **argv, bool verbose=true) {
         return 0;
 
     // Handle errors
-    } catch (const std::ios_base::failure &e) { // This includes MountainRangeIOException
+    } catch (const std::ios_base::failure &e) {
         successful_read ? std::cerr << "Failed to write to "  << outfile
                         : std::cerr << "Failed to read from " << infile;
         std::cerr << ": " << e.what() << std::endl;
+    } catch (const std::logic_error &e) {
+        std::cerr << "Failed to read from " << infile << ": " << e.what() << std::endl;
     } catch(const std::exception &e) {
         std::cerr << "Unrecognized error: " << e.what() << std::endl;
     }
