@@ -27,7 +27,7 @@ cmake --build . --parallel
 ctest
 ```
 
-The binaries `initial`, `mountaindiff` and `solver_*` will be built.
+The binaries `initial`, `mountaindiff` and `mountainsolve_*` will be built.
 
 
 
@@ -40,17 +40,17 @@ The other binaries mirror those that will be built for the C++ phases of the pro
 | Corresponding Phase | Binary | Source files |
 | --- | --- | --- |
 | [Phase 1](https://byuhpc.github.io/sci-comp-course/project/phase1) | `initial` | [initial](src/initial.cpp), [MtnRngSM](src/MountainRangeSharedMem.hpp), [MtnRngOMP](src/MountainRangeOpenMP.hpp) |
-| [Phase 2](https://byuhpc.github.io/sci-comp-course/project/phase2) | `solver_serial`* | [solver_openmp](src/solver_openmp.cpp), [MtnRngSM](src/MountainRangeSharedMem.hpp), [MtnRngOMP](src/MountainRangeOpenMP.hpp) |
-| [Phase 3](https://byuhpc.github.io/sci-comp-course/project/phase3) | `solver_openmp` | [solver_openmp](src/solver_openmp.cpp), [MtnRngSM](src/MountainRangeSharedMem.hpp), [MtnRngOMP](src/MountainRangeOpenMP.hpp) |
-| [Phase 5](https://byuhpc.github.io/sci-comp-course/project/phase5) | `solver_thread` | [solver_thread](src/solver_thread.cpp), [MtnRngSM](src/MountainRangeSharedMem.hpp), [MtnRngThrd](src/MountainRangeThreaded.hpp), [CLTP](CoordinatedLoopingThreadpoolCXX/CoordinatedLoopingThreadpool.hpp) |
-| [Phase 7](https://byuhpc.github.io/sci-comp-course/project/phase7) | `solver_mpi`* | [solver_mpi](src/solver_mpi.cpp), [MtnRngMPI](src/MountainRangeMPI.hpp) |
-| [Phase 8](https://byuhpc.github.io/sci-comp-course/project/phase8) | `solver_gpu`* | [solver_gpu](src/solver_gpu.cpp), [MtnRngSM](src/MountainRangeSharedMem.hpp), [MtnRngGPU](src/MountainRangeGPU.hpp) |
+| [Phase 2](https://byuhpc.github.io/sci-comp-course/project/phase2) | `mountainsolve_serial`* | [mountainsolve_openmp](src/mountainsolve_openmp.cpp), [MtnRngSM](src/MountainRangeSharedMem.hpp), [MtnRngOMP](src/MountainRangeOpenMP.hpp) |
+| [Phase 3](https://byuhpc.github.io/sci-comp-course/project/phase3) | `mountainsolve_openmp` | [mountainsolve_openmp](src/mountainsolve_openmp.cpp), [MtnRngSM](src/MountainRangeSharedMem.hpp), [MtnRngOMP](src/MountainRangeOpenMP.hpp) |
+| [Phase 5](https://byuhpc.github.io/sci-comp-course/project/phase5) | `mountainsolve_thread` | [mountainsolve_thread](src/mountainsolve_thread.cpp), [MtnRngSM](src/MountainRangeSharedMem.hpp), [MtnRngThrd](src/MountainRangeThreaded.hpp), [CLTP](CoordinatedLoopingThreadpoolCXX/CoordinatedLoopingThreadpool.hpp) |
+| [Phase 7](https://byuhpc.github.io/sci-comp-course/project/phase7) | `mountainsolve_mpi`* | [mountainsolve_mpi](src/mountainsolve_mpi.cpp), [MtnRngMPI](src/MountainRangeMPI.hpp) |
+| [Phase 8](https://byuhpc.github.io/sci-comp-course/project/phase8) | `mountainsolve_gpu`* | [mountainsolve_gpu](src/mountainsolve_gpu.cpp), [MtnRngSM](src/MountainRangeSharedMem.hpp), [MtnRngGPU](src/MountainRangeGPU.hpp) |
 
-In addition to the source files listed above, each binary depends on [MtnRng](src/MountainRange.hpp), and each `solver_*` depends on [binary_io](simple-cxx-binary-io/binary_io.hpp) and [run_solver](src/run_solver.hpp).
+In addition to the source files listed above, each binary depends on [MtnRng](src/MountainRange.hpp), and each `mountainsolve_*` depends on [binary_io](simple-cxx-binary-io/binary_io.hpp) and [run_solver](src/run_solver.hpp).
 
-\* `solver_serial` uses identical code to `solver_openmp`, but is compiled without OpenMP--part of the beauty of OpenMP. `solver_mpi` is only built if an MPI compiler is found. `solver_gpu` is only built if the compiler is [Nvidia's HPC SDK](https://developer.nvidia.com/hpc-sdk).
+\* `mountainsolve_serial` uses identical code to `mountainsolve_openmp`, but is compiled without OpenMP--part of the beauty of OpenMP. `mountainsolve_mpi` is only built if an MPI compiler is found. `mountainsolve_gpu` is only built if the compiler is [Nvidia's HPC SDK](https://developer.nvidia.com/hpc-sdk).
 
-Each generated `solver_*` has a help message explaining its usage; use `<binary-name> --help` to print it.
+Each generated `mountainsolve_*` has a help message explaining its usage; use `<binary-name> --help` to print it.
 
 
 
@@ -148,10 +148,10 @@ function solve(t0, h0, g0, r, dt)
 end
 ```
 
-`initial` simply creates a mountain range, solves it, and prints the resulting simulation time. `solver_*` read files containing [binary mountain ranges](#io-format), solve them, and write the solved mountain ranges in the same format. There are several sample input and output files in the [samples directory](samples) that are meant to be used for validation; as an example, one could check that `solver_thread` works as expected with four threads thus:
+`initial` simply creates a mountain range, solves it, and prints the resulting simulation time. `mountainsolve_*` read files containing [binary mountain ranges](#io-format), solve them, and write the solved mountain ranges in the same format. There are several sample input and output files in the [samples directory](samples) that are meant to be used for validation; as an example, one could check that `mountainsolve_thread` works as expected with four threads thus:
 
 ```bash
-SOLVER_NUM_THREADS=4 build-dir/solver_thread samples/small-1D-in.mr /tmp/my-small-1D-out.mr
+SOLVER_NUM_THREADS=4 build-dir/mountainsolve_thread samples/small-1D-in.mr /tmp/my-small-1D-out.mr
 build-dir/mountaindiff samples/small-1D-out.mr /tmp/my-small-1D-out.mr \
         && echo Success \
         || echo Failure

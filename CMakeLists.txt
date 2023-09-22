@@ -34,40 +34,40 @@ add_executable(mountaindiff src/mountaindiff.cpp)
 # initial
 add_executable(initial src/initial.cpp)
 
-# solver_serial
-add_executable(solver_serial src/solver_openmp.cpp)
+# mountainsolve_serial
+add_executable(mountainsolve_serial src/mountainsolve_openmp.cpp)
 
-# solver_openmp
+# mountainsolve_openmp
 if(OpenMP_CXX_FOUND)
-    add_executable(solver_openmp src/solver_openmp.cpp)
-    target_link_libraries(solver_openmp OpenMP::OpenMP_CXX)
+    add_executable(mountainsolve_openmp src/mountainsolve_openmp.cpp)
+    target_link_libraries(mountainsolve_openmp OpenMP::OpenMP_CXX)
 endif()
 
-# solver_thread
+# mountainsolve_thread
 if(Threads_FOUND)
-    add_executable(solver_thread src/solver_thread.cpp)
-    target_include_directories(solver_thread PRIVATE CoordinatedLoopingThreadpoolCXX)
-    target_link_libraries(solver_thread Threads::Threads)
+    add_executable(mountainsolve_thread src/mountainsolve_thread.cpp)
+    target_include_directories(mountainsolve_thread PRIVATE CoordinatedLoopingThreadpoolCXX)
+    target_link_libraries(mountainsolve_thread Threads::Threads)
 endif()
 
-# solver_mpi
+# mountainsolve_mpi
 if(MPI_CXX_FOUND)
-    add_executable(solver_mpi src/solver_mpi.cpp)
-    target_link_libraries(solver_mpi MPI::MPI_CXX)
+    add_executable(mountainsolve_mpi src/mountainsolve_mpi.cpp)
+    target_link_libraries(mountainsolve_mpi MPI::MPI_CXX)
 endif()
 
-# solver_gpu
+# mountainsolve_gpu
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL NVHPC)
-    message("-- Found nvc++, will build solver_gpu")
+    message("-- Found nvc++, will build mountainsolve_gpu")
     set(NVCXX_COMPUTE_CAPABILITY "60" CACHE STRING "nvc++ GPU compute capability")
     set(NVCXX_CPU_ARCHITECTURE "haswell" CACHE STRING "CPU architecture that nvc++ will compile for")
-    add_executable(solver_gpu src/solver_gpu.cpp)
-    target_compile_options(solver_gpu PRIVATE
+    add_executable(mountainsolve_gpu src/mountainsolve_gpu.cpp)
+    target_compile_options(mountainsolve_gpu PRIVATE
                            "-tp=${NVCXX_CPU_ARCHITECTURE}" "-stdpar=gpu" "-gpu=sm_${NVCXX_COMPUTE_CAPABILITY}")
-    target_link_options(   solver_gpu PRIVATE
+    target_link_options(   mountainsolve_gpu PRIVATE
                            "-tp=${NVCXX_CPU_ARCHITECTURE}" "-stdpar=gpu" "-gpu=sm_${NVCXX_COMPUTE_CAPABILITY}")
 else()
-    message("-- Did not find nvc++, won't build solver_gpu")
+    message("-- Did not find nvc++, won't build mountainsolve_gpu")
 endif()
 
 
@@ -103,35 +103,35 @@ if(BUILD_TESTING)
     add_test(NAME "initial works" COMMAND initial)
     set_tests_properties("initial works" PROPERTIES PASS_REGULAR_EXPRESSION "1.69")
 
-    # solver_serial
-    test_solver(solver_serial "solver_serial works")
+    # mountainsolve_serial
+    test_solver(mountainsolve_serial "mountainsolve_serial works")
 
     # parallel program tests
     foreach(N 1 2 3 11) # 11 is to make sure that processes with no responsibility don't cause problems
-        # solver_openmp
+        # mountainsolve_openmp
         if(OpenMP_CXX_FOUND)
-            set(OPENMP_TEST_NAME "solver_openmp works with ${N} threads")
-            test_solver(solver_openmp "${OPENMP_TEST_NAME}")
+            set(OPENMP_TEST_NAME "mountainsolve_openmp works with ${N} threads")
+            test_solver(mountainsolve_openmp "${OPENMP_TEST_NAME}")
             set_property(TEST "${OPENMP_TEST_NAME}" PROPERTY ENVIRONMENT OMP_NUM_THREADS=${N})
         endif()
 
-        # solver_thread
+        # mountainsolve_thread
         if(Threads_FOUND)
-            set(THREAD_TEST_NAME "solver_thread works with ${N} threads")
-            test_solver(solver_thread "${THREAD_TEST_NAME}")
+            set(THREAD_TEST_NAME "mountainsolve_thread works with ${N} threads")
+            test_solver(mountainsolve_thread "${THREAD_TEST_NAME}")
             set_property(TEST "${THREAD_TEST_NAME}" PROPERTY ENVIRONMENT SOLVER_NUM_THREADS=${N})
         endif()
 
-        # solver_mpi
+        # mountainsolve_mpi
         if(MPI_CXX_FOUND)
-            add_test(NAME "solver_mpi works with ${N} processes"
-                     COMMAND bash "${TEST_SOLVER}" "${MTN_DIFF}" mpirun -n 3 "${CMAKE_CURRENT_BINARY_DIR}/solver_mpi"
+            add_test(NAME "mountainsolve_mpi works with ${N} processes"
+                     COMMAND bash "${TEST_SOLVER}" "${MTN_DIFF}" mpirun -n 3 "${CMAKE_CURRENT_BINARY_DIR}/mountainsolve_mpi"
                                   "${TESTING_INFILE}" "${TESTING_OUTFILE}")
         endif()
     endforeach()
 
-    # solver_gpu
+    # mountainsolve_gpu
     if("${CMAKE_CXX_COMPILER_ID}" STREQUAL NVHPC)
-        test_solver(solver_gpu "solver_gpu works")
+        test_solver(mountainsolve_gpu "mountainsolve_gpu works")
     endif()
 endif()
