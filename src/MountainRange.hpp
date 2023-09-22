@@ -11,6 +11,23 @@
 
 
 
+
+
+
+
+
+
+#include <iomanip>
+
+
+
+
+
+
+
+
+
+
 class MountainRange {
 public:
     using value_type = double;
@@ -64,7 +81,9 @@ public:
                 auto check_file_name = std::format("chk-{:07.2f}.wo", t).c_str();
                 write(check_file_name);
             }
-            std::cout << "ds is " << dsteepness() << " at " << t << std::endl;
+            std::cout << "ds is " << dsteepness() << " at " << t << " ||| ";
+            for (auto H: h) std::cout << std::setw(11) << H;
+            std::cout << std::endl;
         }
         return t;
     }
@@ -85,6 +104,9 @@ public:
         if constexpr (BoundsCheck) {
             if (i > 0) left -= 1;
             if (i < size-1) right += 1;
+        } else {
+            left -= 1;
+            right += 1;
         }
         auto L = (h[left] + h[right]) / 2 - h[i];
         return r[i] - pow(h[i], 3) + L;
@@ -98,6 +120,9 @@ public:
         if constexpr (BoundsCheck) {
             if (i > 0) left -= 1;
             if (i < size-1) right += 1;
+        } else {
+            left -= 1;
+            right += 1;
         }
         return (h[right] - h[left]) * (g[right] - g[left]) / 2;
     }

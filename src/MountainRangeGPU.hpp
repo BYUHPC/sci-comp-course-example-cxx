@@ -37,7 +37,8 @@ public:
         }); // https://tinyurl.com/byusc-lambda
         // Update g
         g[0] = g_cell(0);
-        std::for_each(std::execution::par_unseq, first+1, last-1, [r=r.data(), h=h.data(), g=g.data(), size=h.size()](auto i){
+        std::for_each(std::execution::par_unseq, first+1, last-1,
+                      [r=r.data(), h=h.data(), g=g.data(), size=h.size()](auto i){
             g[i] = g_cell<false>(r, h, size, i); // false turns off bounds checking
         }); // https://tinyurl.com/byusc-lambda
         g[g.size()-1] = g_cell(g.size()-1);
@@ -50,8 +51,8 @@ public:
         auto [first, last] = index_range(h); // https://tinyurl.com/byusc-structbind
         auto ds = ds_cell(0);
         ds += std::transform_reduce(std::execution::par_unseq, first+1, last-1, value_type{0},
-                                    [](auto a, auto b){ return a + b; }, // reduce
-                                    [h=h.data(), g=g.data(), size=h.size()](auto i){    // transform
+                                    [](auto a, auto b){ return a + b; },             // reduce
+                                    [h=h.data(), g=g.data(), size=h.size()](auto i){ // transform
                                         return ds_cell<false>(h, g, size, i); // false turns off bounds checking
                                     }); // https://tinyurl.com/byusc-lambda
         ds += ds_cell(h.size()-1);
