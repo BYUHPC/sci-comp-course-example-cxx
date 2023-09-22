@@ -19,7 +19,7 @@ int run_solver(int argc, char **argv, bool verbose=true) {
     // Usage
     auto help = [=](){
         std::cout << "Usage: " << argv[0] << " infile outfile" << std::endl
-                  << "Read a mountain rante from infile, solve it, and write it to outfile." << std::endl;
+                  << "Read a mountain range from infile, solve it, and write it to outfile." << std::endl;
         if constexpr (requires { MtnRange::help_message; }) std::cout << MtnRange::help_message << std::endl;
         std::cout << "`" << argv[0] << " --help` prints this message." << std::endl;
     }; // https://tinyurl.com/byusc-lambda
