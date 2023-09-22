@@ -4,6 +4,7 @@
 
 class MountainRangeOpenMP: public MountainRangeSharedMem {
 public:
+    // Delegate construction to MountainRangeSharedMem
     MountainRangeOpenMP(auto &&...args): MountainRangeSharedMem(args...) { // https://tinyurl.com/byusc-parpack
         step(0); // initialize g
     }

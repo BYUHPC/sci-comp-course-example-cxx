@@ -4,27 +4,10 @@
 #include <cmath>
 #include <format>
 #include <iostream>
-#ifdef MPI_VERSION //#if __has_include(<mpi.h>)
+// Need to include mpi.h if an MPI compiler is being used
+#ifdef MPI_VERSION
 #include <mpi.h>
 #endif
-
-
-
-
-
-
-
-
-
-
-#include <iomanip>
-
-
-
-
-
-
-
 
 
 
@@ -45,8 +28,11 @@ protected:
 
 public:
     size_t     size()         const { return n; }
+
     value_type sim_time()     const { return t; }
+
     auto       &uplift_rate() const { return r; }
+
     auto       &height()      const { return h; }
 
 
@@ -58,12 +44,17 @@ public:
     // From an uplift rate; simulation time and height are initialized to zero
     MountainRange(const decltype(r) &r): MountainRange(r, decltype(h)(r.size()), 0) {}
 
-    // From a std::istream (if non-MPI) or an MPI_File (if MPI)
-#ifdef MPI_VERSION //#if __has_include(<mpi.h>)
+    // "Virtual" I/O constructors: from a std::istream (if non-MPI) or an MPI_File (if MPI)
+#ifdef MPI_VERSION
     MountainRange(MPI_File &&f);
 #else
     MountainRange(std::istream &&s);
 #endif
+
+
+
+    // Write function to be implemented by child classes
+    virtual bool write(const char *const filename) const = 0;
 
 
 
@@ -81,9 +72,6 @@ public:
                 auto check_file_name = std::format("chk-{:07.2f}.wo", t).c_str();
                 write(check_file_name);
             }
-            std::cout << "ds is " << dsteepness() << " at " << t << " ||| ";
-            for (auto H: h) std::cout << std::setw(11) << H;
-            std::cout << std::endl;
         }
         return t;
     }
@@ -92,7 +80,9 @@ public:
     
     // Step and dsteepness are to be implemented by child classes
     virtual value_type step(decltype(t) time_step) = 0;
+
     value_type step() { return step(dt); }
+
     virtual value_type dsteepness() = 0; // can't be const because threads
 
 
@@ -100,37 +90,28 @@ public:
     // Helpers for step and dsteepness
     template <bool BoundsCheck=true>
     constexpr static value_type g_cell(const auto r, const auto h, auto size, auto i) {
-        auto left = i, right = i;
+        auto left = i-1, right = i+1;
         if constexpr (BoundsCheck) {
-            if (i > 0) left -= 1;
-            if (i < size-1) right += 1;
-        } else {
-            left -= 1;
-            right += 1;
+            left =  i == 0      ? i : left;
+            right = i == size-1 ? i : right;
         }
         auto L = (h[left] + h[right]) / 2 - h[i];
         return r[i] - pow(h[i], 3) + L;
     }
+
+    template <bool BoundsCheck=true>
+    constexpr static value_type ds_cell(const auto h, const auto g, auto size, auto i) {
+        auto left = i-1, right = i+1;
+        if constexpr (BoundsCheck) {
+            left =  i == 0      ? i : left;
+            right = i == size-1 ? i : right;
+        }
+        return (h[right] - h[left]) * (g[right] - g[left]) / 2;
+    }
+
     template <bool BoundsCheck=true>
     constexpr value_type g_cell(auto i) const { return g_cell<BoundsCheck>(r, h, h.size(), i); }
 
     template <bool BoundsCheck=true>
-    constexpr static value_type ds_cell(const auto h, const auto g, auto size, auto i) {
-        auto left = i, right = i;
-        if constexpr (BoundsCheck) {
-            if (i > 0) left -= 1;
-            if (i < size-1) right += 1;
-        } else {
-            left -= 1;
-            right += 1;
-        }
-        return (h[right] - h[left]) * (g[right] - g[left]) / 2;
-    }
-    template <bool BoundsCheck=true>
     constexpr value_type ds_cell(auto i) const { return ds_cell(h, g, h.size(), i); }
-
-
-
-    // Write function to be implemented by child classes
-    virtual bool write(const char *const filename) const = 0;
 };

@@ -8,26 +8,34 @@
 
 
 
+// Helper function to get iterators to first and last indices of an array
 #if __has_include(<thrust/iterator/counting_iterator.h>)
 #include <thrust/iterator/counting_iterator.h>
-auto index_range(const auto &x) {
-    return std::make_tuple(thrust::counting_iterator(0ul), thrust::counting_iterator(x.size()));
-}
+namespace {
+    auto index_range(const auto &x) {
+        return std::make_tuple(thrust::counting_iterator(0ul), thrust::counting_iterator(x.size()));
+    }
+};
 #else
 #include <ranges>
-auto index_range(const auto &x) {
-    auto interior = std::ranges::views::iota(0ul, x.size());
-    return std::make_tuple(interior.begin(), interior.end());
-}
+namespace {
+    auto index_range(const auto &x) {
+        auto interior = std::ranges::views::iota(0ul, x.size());
+        return std::make_tuple(interior.begin(), interior.end());
+    }
+};
 #endif
 
 
 
 class MountainRangeGPU: public MountainRangeSharedMem {
 public:
+    // Delegate constructor to MountainRangeSharedMem
     MountainRangeGPU(auto && ...args): MountainRangeSharedMem(args...) { // https://tinyurl.com/byusc-parpack
-        step(0);
+        step(0); // initialize g
     }
+
+
 
     value_type step(value_type time_step) {
         // Update h
@@ -46,6 +54,8 @@ public:
         t += time_step;
         return t;
     }
+
+
 
     value_type dsteepness() {
         auto [first, last] = index_range(h); // https://tinyurl.com/byusc-structbind

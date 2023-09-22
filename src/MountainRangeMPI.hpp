@@ -8,8 +8,8 @@
 
 
 
-// Anonymous namespace with convenience wrappers for MPI_File_{read,write}_at
 namespace {
+    // Convenience wrappers for MPI I/O
     // Run MPI_File_read_at or MPI_File_write_at, throwing a MountainRangeIOException on read or write failure
     enum ReadOrWrite { Read, Write };
     template <ReadOrWrite RW>
@@ -45,10 +45,12 @@ namespace {
 
 
 
+    // Size of header in bytes
     constexpr const size_t header_size = sizeof(MountainRange::size_type) * 2 + sizeof(MountainRange::value_type);
 
 
 
+    // Singleton-stype MPI rank and size functions
     static int _mpi_rank = -1;
     auto mpi_rank() {
         if (_mpi_rank > -1) return _mpi_rank;
@@ -66,15 +68,16 @@ namespace {
 
 
 
+// Initialize a MountainRange from an open MPI_File
 MountainRange::MountainRange(MPI_File &&f):
-        N{[&f]{
+        N{[&f]{ // https://tinyurl.com/byusc-lambdai
             auto N = try_mpi_file_read_at<size_type>(f, 0);
             if (N != 1) throw std::logic_error("this implementation only supports one dimensional mountain ranges");
             return N;
         }()},
         n{try_mpi_file_read_at<size_type>(f, sizeof(size_type))},
         t{try_mpi_file_read_at<value_type>(f, sizeof(size_type)*2)},
-        r{[&f, this]{
+        r{[&f, this]{ // https://tinyurl.com/byusc-lambdai
             auto [first, last] = mtn_utils::divided_cell_range(n, mpi_rank(), mpi_size());
             first = first == 0 ? first : first-1; // left halo
             last = std::min(last+1, n); // right halo
@@ -83,7 +86,7 @@ MountainRange::MountainRange(MPI_File &&f):
             try_mpi_file_read_at(f, header_size+sizeof(value_type)*first, r.data(), r.size());
             return r;
         }()},
-        h{[&f, this]{
+        h{[&f, this]{ // https://tinyurl.com/byusc-lambdai
             auto [first, last] = mtn_utils::divided_cell_range(n, mpi_rank(), mpi_size());
             first = first == 0 ? first : first-1; // left halo
             last = std::min(last+1, n); // right halo
@@ -112,8 +115,10 @@ public:
                 if (open_error) throw std::logic_error(std::string("could not open ") + filename);
                 return f;
             }()) {
-        step(0);
+        step(0); // initialize g
     }
+
+
 
     bool write(const char *const filename) const {
         MPI_File f;
@@ -181,6 +186,7 @@ public:
 
 
 private:
+    // Helper function for iteration
     void for_each_cell_this_proc(auto F) {
         size_t first = mpi_rank() != 0,
                last  = n == mtn_utils::divided_cell_range(n, mpi_rank(), mpi_size())[1] ? h.size() : h.size()-1;
