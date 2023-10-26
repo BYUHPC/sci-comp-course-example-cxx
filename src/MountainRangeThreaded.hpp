@@ -20,7 +20,7 @@ class MountainRangeThreaded: public MountainRangeSharedMem {
     const size_type nthreads;
     CoordinatedLoopingThreadpool ds_workers, step_workers;
     std::atomic<value_type> ds_aggregator;
-    std::barrier<> step_barrier, ds_barrier;
+    std::barrier<> step_barrier;
     value_type iter_time_step;
 public:
     inline static const std::string help_message =
@@ -37,21 +37,17 @@ public:
             }()},
             ds_workers([this](auto tid){ // https://tinyurl.com/byusc-lambda
                 auto [first, last] = mtn_utils::divided_cell_range(h.size(), tid, nthreads);
-                ds_barrier.arrive_and_wait();
                 value_type ds_local = 0;
                 for (size_t i=first; i<last; i++) ds_local += ds_cell(i);
                 ds_aggregator += ds_local;
-                ds_barrier.arrive_and_wait();
             }, std::views::iota(0ul, nthreads)),
             step_workers([this](auto tid){ // https://tinyurl.com/byusc-lambda
                 auto [first, last] = mtn_utils::divided_cell_range(h.size(), tid, nthreads);
-                step_barrier.arrive_and_wait();
                 for (size_t i=first; i<last; i++) h[i] += iter_time_step * g[i];
-                step_barrier.arrive_and_wait();
+                step_barrier.arrive_and_wait(); // h has to be completely updated before g update can start
                 for (size_t i=first; i<last; i++) g[i] = g_cell(i);
-                step_barrier.arrive_and_wait();
             }, std::views::iota(0ul, nthreads)),
-            step_barrier(nthreads), ds_barrier(nthreads)  {
+            step_barrier(nthreads) {
         step(0); // initialize g
     }
 
