@@ -82,7 +82,6 @@ MountainRange::MountainRange(MPI_File &&f):
             first = first == 0 ? first : first-1; // left halo
             last = std::min(last+1, n); // right halo
             std::vector<value_type> r(last-first);
-            std::cout << "FIRST: " << first << "; LAST: " << last << std::endl;
             try_mpi_file_read_at(f, header_size+sizeof(value_type)*first, r.data(), r.size());
             return r;
         }()},
