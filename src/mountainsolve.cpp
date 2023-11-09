@@ -1,5 +1,3 @@
-#ifndef RUN_SOLVER_H
-#define RUN_SOLVER_H
 #ifdef MPI_VERSION
 #include <mpl/mpl.h>
 #endif
@@ -91,7 +89,3 @@ int main(int argc, char **argv) {
     }
     return 1;
 }
-
-
-
-#endif

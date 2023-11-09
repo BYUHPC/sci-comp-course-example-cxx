@@ -255,7 +255,7 @@ public:
     constexpr value_type g_cell(auto i) const { return g_cell<BoundsCheck>(r, h, h.size(), i); }
 
     template <bool BoundsCheck=true>
-    constexpr value_type ds_cell(auto i) const { return ds_cell<BoundsCheck>(h, g, h.size(), i); }
+    constexpr value_type ds_cell(auto i) const { return ds_cell<BoundsCheck>(h, g, g.size(), i); }
 };
 
 
