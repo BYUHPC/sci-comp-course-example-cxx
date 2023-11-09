@@ -28,45 +28,44 @@ namespace {
 
 
 
-class MountainRangeGPU: public MountainRangeSharedMem {
+class MountainRangeGPU: public MountainRange {
 public:
-    // Delegate constructor to MountainRangeSharedMem
-    MountainRangeGPU(auto && ...args): MountainRangeSharedMem(args...) { // https://tinyurl.com/byusc-parpack
+    // Delegate constructor to MountainRange
+    MountainRangeGPU(auto && ...args): MountainRange(args...) { // https://tinyurl.com/byusc-parpack
         step(0); // initialize g
     }
 
-
-
-    value_type step(value_type time_step) {
-        // Update h
-        auto [first, last] = index_range(h); // https://tinyurl.com/byusc-structbind
-        std::for_each(std::execution::par_unseq, first, last, [h=h.data(), g=g.data(), time_step](auto i){
-            h[i] += time_step * g[i];
-        }); // https://tinyurl.com/byusc-lambda
-        // Update g
-        g[0] = g_cell(0);
-        std::for_each(std::execution::par_unseq, first+1, last-1,
-                      [r=r.data(), h=h.data(), g=g.data(), size=h.size()](auto i){
-            g[i] = g_cell<false>(r, h, size, i); // false turns off bounds checking
-        }); // https://tinyurl.com/byusc-lambda
-        g[g.size()-1] = g_cell(g.size()-1);
-        // Update simulation time
-        t += time_step;
-        return t;
-    }
-
-
-
+    // Steepness derivative
     value_type dsteepness() {
         auto [first, last] = index_range(h); // https://tinyurl.com/byusc-structbind
         auto ds = ds_cell(0);
         ds += std::transform_reduce(std::execution::par_unseq, first+1, last-1, value_type{0},
-                                    [](auto a, auto b){ return a + b; },             // reduce
+                                    std::plus<>(),                                   // reduce
                                     [h=h.data(), g=g.data(), size=h.size()](auto i){ // transform
                                         return ds_cell<false>(h, g, size, i); // false turns off bounds checking
                                     }); // https://tinyurl.com/byusc-lambda
-        ds += ds_cell(h.size()-1);
-        return ds / h.size();
+        ds += ds_cell(n-1);
+        return ds;
+    }
+
+    // Iterate from t to t+time_step in one step
+    value_type step(value_type time_step) {
+        // Update h
+        auto [first, last] = index_range(h); // https://tinyurl.com/byusc-structbind
+        std::for_each(std::execution::par_unseq, first, last,
+                      [h=h.data(), g=g.data(), time_step](auto i){
+                          h[i] += time_step * g[i];
+                      }); // https://tinyurl.com/byusc-lambda
+        // Update g
+        g[0] = g_cell(0);
+        std::for_each(std::execution::par_unseq, first+1, last-1,
+                      [r=r.data(), h=h.data(), g=g.data(), size=h.size()](auto i){
+                          g[i] = g_cell<false>(r, h, size, i); // false turns off bounds checking
+                      }); // https://tinyurl.com/byusc-lambda
+        g[n-1] = g_cell(n-1);
+        // Update simulation time
+        t += time_step;
+        return t;
     }
 };
 

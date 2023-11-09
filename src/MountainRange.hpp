@@ -1,12 +1,18 @@
+#ifndef MOUNTAIN_RANGE_H
+#define MOUNTAIN_RANGE_H
 #include <vector>
 #include <charconv>
 #include <cstring>
 #include <cmath>
 #include <format>
 #include <iostream>
-// Need to include mpi.h if an MPI compiler is being used
+#include <fstream>
+#include <filesystem>
+#include "binary_io.hpp"
+#include "utils.hpp"
+// Need to include MPL if an MPI compiler is being used
 #ifdef MPI_VERSION
-#include <mpi.h>
+#include <mpl/mpl.h>
 #endif
 
 
@@ -17,23 +23,20 @@ public:
     using size_type = size_t;
 protected:
     static constexpr const value_type dt = 0.01;
+    static constexpr const size_t header_size = sizeof(size_type) * 2 + sizeof(value_type);
 
 
 
     // Members and accessors
-    const size_type N, n;            // number of dimensions and size
+    const size_type N, n;               // size
     value_type t;                    // simulation time
     const std::vector<value_type> r; // uplift rate
     std::vector<value_type> h, g;    // height and growth rate
-
 public:
-    size_t     size()         const { return n; }
-
-    value_type sim_time()     const { return t; }
-
-    auto       &uplift_rate() const { return r; }
-
-    auto       &height()      const { return h; }
+    auto size()         const { return n; }
+    auto sim_time()     const { return t; }
+    auto &uplift_rate() const { return r; }
+    auto &height()      const { return h; }
 
 
 
@@ -44,17 +47,156 @@ public:
     // From an uplift rate; simulation time and height are initialized to zero
     MountainRange(const decltype(r) &r): MountainRange(r, decltype(h)(r.size()), 0) {}
 
-    // "Virtual" I/O constructors: from a std::istream (if non-MPI) or an MPI_File (if MPI)
+
+
+    // Handle problems reading and writing
+private:
+    static void handle_wrong_dimensions() {
+        throw std::logic_error("This implementation only handles 1-dimensional mountain ranges");
+    }
+    static void handle_wrong_file_size() {
+        throw std::logic_error("Input file appears to be corrupt");
+    }
+    static void handle_write_failure(const char *const filename) {
+        throw std::logic_error("Failed to write to " + std::string(filename));
+    }
+    static void handle_read_failure(const char *const filename) {
+        throw std::logic_error("Failed to read from " + std::string(filename));
+    }
+
+
+
+    // MPI I/O section: if an MPI compiler is being used, include the following
+    // See the note at the top of MountainRangeMPI.hpp for details
 #ifdef MPI_VERSION
-    MountainRange(MPI_File &&f);
+protected:
+    // Figure out which cells this process in in charge of
+    template <bool IncludeHalos=false>
+    auto this_process_cell_range() const {
+        auto [first, last] = mtn_utils::divided_cell_range(n, mpl::environment::comm_world().rank(),
+                                                              mpl::environment::comm_world().size());
+        if constexpr (IncludeHalos) {
+            first = std::max(first-1, 0); // left halo
+            last = std::min(last+1, n);   // right halo
+        }
+        return std::array{first, last};
+    }
+
+private:
+    // Figure out how big this process should make its arrays
+    auto this_process_cell_count() const {
+        auto [first, last] = this_process_cell_range<true>(); // include halos
+        return last - first;
+    }
+
+    // Read from an mpl::file
+    MountainRange(mpl::file &&f): N{[&f]{ // https://tinyurl.com/byusc-lambdai
+                                      size_type ret;
+                                      f.read_all(ret);
+                                      if (ret != 1) handle_wrong_dimensions();
+                                      return ret;
+                                  }()},
+                                  n{[&f]{ // https://tinyurl.com/byusc-lambdai
+                                      size_type ret;
+                                      f.read_all(ret);
+                                      auto expected_file_size = header_size + ret * sizeof(value_type) * 2
+                                      if (expected_file_size != f.size()) handle_wrong_file_size();
+                                      return ret;
+                                  }()},
+                                  t{[&f]{ // https://tinyurl.com/byusc-lambdai
+                                      value_type ret;
+                                      f.read_all(ret);
+                                      return ret;
+                                  }()},
+                                  r(this_process_cell_count()),
+                                  h(this_process_cell_count()),
+                                  g(this_process_cell_count()) {
+        // Read in this process's portion of r and h
+        auto [first, last] = this_process_cell_range<true>(); // include halos
+        auto layout = mpl::vector_layout<value_type>(r.size());
+        auto r_offset = header_size + sizeof(value_type) * first;
+        auto h_offset = r_offset + sizeof(value_type) * n;
+        f.read_at(r_offset, r.data(), layout);
+        f.read_at(h_offset, h.data(), layout);
+    }
+
+public:
+    // Constructor taking a file name
+    MountainRange(const char *const filename) try: MountainRange(mpl::file(mpl::environment::comm_world(), filename,
+                                                                           mpl::file::access_mode::read_only)) {}
+                                              catch (const mpl::io_failure &e) {
+                                                   handle_read_failure(filename);
+                                              }
+
+    // Write to a file with MPI I/O
+    void write(const char *const filename) const try {
+        auto f = mpl::file(mpl::environment::comm_world(), filename, mpl::file::access_mode::create | mpl::file::access_mode::write_only);
+        // Write header
+        f.write_all(N);
+        f.write_all(n);
+        f.write_all(t);
+        // Write this process's portion of r and h
+        auto [first, last] = this_process_cell_range<false>(); // don't include halos
+        auto layout = mpl::vector_layout<value_type>(last-first);
+        auto r_offset = layout + sizeof(value_type) * first;
+        auto h_offset = r_offset + sizeof(value_type) * n;
+        auto halo_offset = mpl::environment::comm_world().rank() == 0 ? 0 : 1;
+        f.write_at(r_offset, r.data()+halo_offset, layout);
+        f.write_at(h_offset, h.data()+halo_offset, layout);
+    } catch (const mpl::io_failure &e) {
+        handle_write_failure(filename);
+    }
+
+
+
+    // "Normal" I/O section: if a non-MPI compiler is being used, include the following
 #else
-    MountainRange(std::istream &&s);
-#endif
+private:
+    // Read in and return a vector of size count
+    template <class T>
+    static auto try_read_vector(std::istream &s, auto count) {
+        auto v = std::vector<T>(count);
+        try_read_bytes(s, v.data(), v.size());
+        return v;
+    }
 
+    // Read from a std::istream
+    MountainRange(std::istream &&s, size_t file_size=0): N{[&s, this]{
+                                                             auto ret = try_read_bytes<size_type>(s);
+                                                             if (ret != 1) handle_wrong_dimensions();
+                                                             return ret;
+                                                         }()},
+                                                         n{[&s, file_size, this]{
+                                                             auto ret = try_read_bytes<size_type>(s);
+                                                             auto expected_file_size = header_size + sizeof(value_type) * ret * 2;
+                                                             if (expected_file_size != file_size) handle_wrong_file_size();
+                                                             return ret;
+                                                         }()},
+                                                         t{try_read_bytes<decltype(t)>(s)},
+                                                         r(try_read_vector<value_type>(s, n)),
+                                                         h(try_read_vector<value_type>(s, n)),
+                                                         g(h.size()) {}
 
+public:
+    // Constructor taking a filename
+    MountainRange(const char *const filename) try: MountainRange(std::ifstream(filename),
+                                                                 std::filesystem::file_size(filename)) {}
+                                              catch (const std::ios_base::failure &e) {
+                                                  handle_read_failure(filename);
+                                              }
 
-    // Write function to be implemented by child classes
-    virtual bool write(const char *const filename) const = 0;
+    // Write to a file with "normal" I/O
+    void write(const char *const filename) const try {
+        auto s = std::ofstream(filename);
+        // Write header
+        try_write_bytes(s, &N, &n, &t);
+        // Write body
+        try_write_bytes(s, r.data(), r.size());
+        try_write_bytes(s, h.data(), h.size());
+    } catch (const std::ios_base::failure &e) {
+        handle_write_failure(filename);
+    }
+#endif // end of MPI vs non-MPI I/O section
 
 
 
@@ -77,13 +219,13 @@ public:
     }
 
 
-    
+
     // Step and dsteepness are to be implemented by child classes
     virtual value_type step(decltype(t) time_step) = 0;
 
     value_type step() { return step(dt); }
 
-    virtual value_type dsteepness() = 0; // can't be const because threads
+    virtual value_type dsteepness() = 0; // can't be const due to our threaded code implementation
 
 
 
@@ -100,18 +242,22 @@ public:
     }
 
     template <bool BoundsCheck=true>
-    constexpr static value_type ds_cell(const auto h, const auto g, auto size, auto i) {
+    constexpr value_type ds_cell(const auto h, const auto g, auto size, auto i) const {
         auto left = i-1, right = i+1;
         if constexpr (BoundsCheck) {
             left =  i == 0      ? i : left;
             right = i == size-1 ? i : right;
         }
-        return (h[right] - h[left]) * (g[right] - g[left]) / 2;
+        return (h[right] - h[left]) * (g[right] - g[left]) / 2 / n;
     }
 
     template <bool BoundsCheck=true>
     constexpr value_type g_cell(auto i) const { return g_cell<BoundsCheck>(r, h, h.size(), i); }
 
     template <bool BoundsCheck=true>
-    constexpr value_type ds_cell(auto i) const { return ds_cell(h, g, h.size(), i); }
+    constexpr value_type ds_cell(auto i) const { return ds_cell<BoundsCheck>(h, g, h.size(), i); }
 };
+
+
+
+#endif

@@ -35,25 +35,29 @@ add_executable(mountaindiff src/mountaindiff.cpp)
 add_executable(initial src/initial.cpp)
 
 # mountainsolve_serial
-add_executable(mountainsolve_serial src/mountainsolve_openmp.cpp)
+add_executable(mountainsolve_serial src/mountainsolve.cpp)
+target_compile_definitions(mountainsolve_serial PUBLIC USE_OPENMP)
 
 # mountainsolve_openmp
 if(OpenMP_CXX_FOUND)
-    add_executable(mountainsolve_openmp src/mountainsolve_openmp.cpp)
+    add_executable(mountainsolve_openmp src/mountainsolve.cpp)
     target_link_libraries(mountainsolve_openmp OpenMP::OpenMP_CXX)
+    target_compile_definitions(mountainsolve_openmp PUBLIC USE_OPENMP)
 endif()
 
 # mountainsolve_thread
 if(Threads_FOUND)
-    add_executable(mountainsolve_thread src/mountainsolve_thread.cpp)
+    add_executable(mountainsolve_thread src/mountainsolve.cpp)
     target_include_directories(mountainsolve_thread PRIVATE CoordinatedLoopingThreadpoolCXX)
     target_link_libraries(mountainsolve_thread Threads::Threads)
+    target_compile_definitions(mountainsolve_thread PUBLIC USE_THREAD)
 endif()
 
 # mountainsolve_mpi
 if(MPI_CXX_FOUND)
     add_executable(mountainsolve_mpi src/mountainsolve_mpi.cpp)
     target_link_libraries(mountainsolve_mpi MPI::MPI_CXX)
+    target_compile_definitions(mountainsolve_mpi PUBLIC USE_MPI)
 endif()
 
 # mountainsolve_gpu
@@ -66,6 +70,7 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL NVHPC)
                            "-tp=${NVCXX_CPU_ARCHITECTURE}" "-stdpar=gpu" "-gpu=sm_${NVCXX_COMPUTE_CAPABILITY}")
     target_link_options(   mountainsolve_gpu PRIVATE
                            "-tp=${NVCXX_CPU_ARCHITECTURE}" "-stdpar=gpu" "-gpu=sm_${NVCXX_COMPUTE_CAPABILITY}")
+    target_compile_definitions(mountainsolve_gpu PUBLIC USE_GPU)
 else()
     message("-- Did not find nvc++, won't build mountainsolve_gpu")
 endif()

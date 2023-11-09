@@ -11,11 +11,11 @@
 #include <barrier>
 #include "CoordinatedLoopingThreadpool.hpp"
 #include "utils.hpp"
-#include "MountainRangeSharedMem.hpp"
+#include "MountainRange.hpp"
 
 
 
-class MountainRangeThreaded: public MountainRangeSharedMem {
+class MountainRangeThreaded: public MountainRange {
     // Members
     const size_type nthreads;
     CoordinatedLoopingThreadpool ds_workers, step_workers;
@@ -26,9 +26,8 @@ public:
     inline static const std::string help_message =
             "Set the environment variable SOLVER_NUM_THREADS to a positive integer to set thread count (default 1).";
 
-
-
-    MountainRangeThreaded(auto &&...args): MountainRangeSharedMem(args...), // https://tinyurl.com/byusc-parpack
+    // Run base constructor then build threading infrastructure
+    MountainRangeThreaded(auto &&...args): MountainRange(args...), // https://tinyurl.com/byusc-parpack
             nthreads{[]{ // https://tinyurl.com/byusc-lambdai
                 size_type nthreads = 1;
                 auto nthreads_str = std::getenv("SOLVER_NUM_THREADS");
@@ -36,13 +35,13 @@ public:
                 return nthreads;
             }()},
             ds_workers([this](auto tid){ // https://tinyurl.com/byusc-lambda
-                auto [first, last] = mtn_utils::divided_cell_range(h.size(), tid, nthreads);
+                auto [first, last] = mtn_utils::divided_cell_range(n, tid, nthreads);
                 value_type ds_local = 0;
                 for (size_t i=first; i<last; i++) ds_local += ds_cell(i);
                 ds_aggregator += ds_local;
             }, std::views::iota(0ul, nthreads)),
             step_workers([this](auto tid){ // https://tinyurl.com/byusc-lambda
-                auto [first, last] = mtn_utils::divided_cell_range(h.size(), tid, nthreads);
+                auto [first, last] = mtn_utils::divided_cell_range(n, tid, nthreads);
                 for (size_t i=first; i<last; i++) h[i] += iter_time_step * g[i];
                 step_barrier.arrive_and_wait(); // h has to be completely updated before g update can start
                 for (size_t i=first; i<last; i++) g[i] = g_cell(i);
@@ -51,16 +50,14 @@ public:
         step(0); // initialize g
     }
 
-
-
+    // Steepness derivative
     value_type dsteepness() {
         ds_aggregator = 0;
         ds_workers.trigger_sync();
-        return ds_aggregator / h.size();
+        return ds_aggregator;
     }
 
-
-
+    // Iterate from t to t+time_step in one step
     value_type step(value_type time_step) {
         iter_time_step = time_step;
         step_workers.trigger_sync();

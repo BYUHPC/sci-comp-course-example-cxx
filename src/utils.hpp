@@ -1,3 +1,5 @@
+#ifndef MTN_UTILS_H
+#define MTN_UTILS_H
 #include <array>
 
 
@@ -11,3 +13,7 @@ namespace mtn_utils {
         return std::array{first, last};
     }
 };
+
+
+
+#endif
