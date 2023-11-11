@@ -1,5 +1,5 @@
 #ifdef MPI_VERSION
-#include <mpl/mpl.h>
+#include <mpl/mpl.hpp>
 #endif
 
 

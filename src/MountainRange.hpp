@@ -12,7 +12,7 @@
 #include "utils.hpp"
 // Need to include MPL if an MPI compiler is being used
 #ifdef MPI_VERSION
-#include <mpl/mpl.h>
+#include <mpl/mpl.hpp>
 #endif
 
 
@@ -30,8 +30,7 @@ protected:
     // Members and accessors
     const size_type N, n;               // size
     value_type t;                    // simulation time
-    const std::vector<value_type> r; // uplift rate
-    std::vector<value_type> h, g;    // height and growth rate
+    std::vector<value_type> r, h, g; // height and growth rate
 public:
     auto size()         const { return n; }
     auto sim_time()     const { return t; }
@@ -76,8 +75,8 @@ protected:
         auto [first, last] = mtn_utils::divided_cell_range(n, mpl::environment::comm_world().rank(),
                                                               mpl::environment::comm_world().size());
         if constexpr (IncludeHalos) {
-            first = std::max(first-1, 0); // left halo
-            last = std::min(last+1, n);   // right halo
+            first = first == 0 ? first : first-1;
+            last  = last  == n ? last  : last+1;
         }
         return std::array{first, last};
     }
@@ -99,7 +98,7 @@ private:
                                   n{[&f]{ // https://tinyurl.com/byusc-lambdai
                                       size_type ret;
                                       f.read_all(ret);
-                                      auto expected_file_size = header_size + ret * sizeof(value_type) * 2
+                                      auto expected_file_size = header_size + ret * sizeof(value_type) * 2;
                                       if (expected_file_size != f.size()) handle_wrong_file_size();
                                       return ret;
                                   }()},
@@ -138,7 +137,7 @@ public:
         // Write this process's portion of r and h
         auto [first, last] = this_process_cell_range<false>(); // don't include halos
         auto layout = mpl::vector_layout<value_type>(last-first);
-        auto r_offset = layout + sizeof(value_type) * first;
+        auto r_offset = header_size + sizeof(value_type) * first;
         auto h_offset = r_offset + sizeof(value_type) * n;
         auto halo_offset = mpl::environment::comm_world().rank() == 0 ? 0 : 1;
         f.write_at(r_offset, r.data()+halo_offset, layout);

@@ -1,7 +1,7 @@
 #ifndef MOUNTAIN_RANGE_MPI_H
 #define MOUNTAIN_RANGE_MPI_H
 #include <array>
-#include <mpl/mpl.h>
+#include <mpl/mpl.hpp>
 #include "MountainRange.hpp"
 
 
@@ -24,11 +24,12 @@
  */
 class MountainRangeMPI: public MountainRange {
     // Convenience member
-    mpl::cartesian_communicator comm_world;
+    mpl::communicator comm_world;
 
-    // Which cells this process should iterate over
+    // Which local cells this process should iterate over
+    // Usually 1:n-1, but includes the first/last if this is the first or last process
     auto local_cell_range() const {
-        auto [global_first, global_last] = this_process_cell_range();
+        auto [global_first, global_last] = this_process_cell_range<true>(); // include halos
         size_t first = global_first == 0 ? 0        : 1;
         size_t last =  global_last  == n ? r.size() : r.size()-1;
         return std::array{first, last};
@@ -47,7 +48,7 @@ public:
         auto [first, last] = local_cell_range();
         for (size_t i=first; i<last; i++) local_ds += ds_cell(i);
         // Sum the ds from all processes and return it
-        comm_world::allreduce(std::plus<>(), local_ds, global_ds);
+        comm_world.allreduce(std::plus<>(), local_ds, global_ds);
         return global_ds;
     }
 
@@ -55,23 +56,23 @@ private:
     // Swap halo cells between processes to keep simulation consistent between processes
     void exchange_halos(auto &x) {
         // Halos and first/last active cells
-        const auto &first_halo      = x[0],
-                   &first_real_cell = x[1],
-                   &last_real_cell  = x[x.size()-2],
-                   &last_halo       = x[x.size()-1];
+        auto       &first_halo      = x[0];
+        auto       &last_halo       = x[x.size()-1];
+        const auto &first_real_cell = x[1];
+        const auto &last_real_cell  = x[x.size()-2];
         // Tags for sends and receives
-        auto left_tag  = mpl::tag{0}, right_tag = mpl::tag{1};
+        auto left_tag  = mpl::tag_t{0}, right_tag = mpl::tag_t{1}; // direction of data flow is indicated
         // Figure out where we are globally so we can know whether to send data left or right
         auto [global_first, global_last] = this_process_cell_range<true>(); // include halos
         // Exchange halos with the process to the left if there is such a process
         if (global_first > 0) {
-            comm_world::sendrecv(first_real_cell, comm_world.rank()-1, left_tag,   // send
-                                 first_halo,      comm_world.rank()-1, right_tag); // receive
+            comm_world.sendrecv(first_real_cell, comm_world.rank()-1, left_tag,   // send
+                                first_halo,      comm_world.rank()-1, right_tag); // receive
         }
         // Exchange halos with the process to the right if there is such an active process
         if (global_last  < n) {
-            comm_world::sendrecv(last_real_cell,  comm_world.rank()+1, right_tag,  // send
-                                 last_halo,       comm_world.rank()+1, left_tag);  // receive
+            comm_world.sendrecv(last_real_cell,  comm_world.rank()+1, right_tag,  // send
+                                last_halo,       comm_world.rank()+1, left_tag);  // receive
         }
     }
 
@@ -81,7 +82,7 @@ public:
         auto [first, last] = local_cell_range();
         // Update h
         for (size_t i=first; i<last; i++) h[i] += time_step * g[i];
-        // exchange_halos(h); // don't need to exchange h halos since there's no inter-cell dependency
+        exchange_halos(h);
         // Update g
         for (size_t i=first; i<last; i++) g[i] = g_cell(i);
         exchange_halos(g);

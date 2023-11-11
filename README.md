@@ -15,8 +15,7 @@ git clone --recursive git@github.com:BYUHPC/sci-comp-course-example-cxx.git
 Alternately, you can initialize and update submodules after cloning:
 
 ```bash
-git submodule init
-git submodule update
+git submodule update --init
 ```
 
 To build and test, set `srcdir` to the directory containing `CMakeLists.txt`, navigate to a clean build directory, and run:

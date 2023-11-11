@@ -55,8 +55,10 @@ endif()
 
 # mountainsolve_mpi
 if(MPI_CXX_FOUND)
-    add_executable(mountainsolve_mpi src/mountainsolve_mpi.cpp)
-    target_link_libraries(mountainsolve_mpi MPI::MPI_CXX)
+    find_package(mpl REQUIRED)
+    add_executable(mountainsolve_mpi src/mountainsolve.cpp)
+    target_link_libraries(mountainsolve_mpi PRIVATE MPI::MPI_CXX)
+    target_link_libraries(mountainsolve_mpi PRIVATE mpl::mpl)
     target_compile_definitions(mountainsolve_mpi PUBLIC USE_MPI)
 endif()
 
