@@ -82,10 +82,10 @@ public:
     value_type step(value_type time_step) {
         auto [first, last] = local_cell_range(); // https://tinyurl.com/byusc-structbind
         // Update h
-        for (size_t i=first; i<last; i++) h[i] += time_step * g[i];
+        for (size_t i=first; i<last; i++) update_h_cell(i);
         exchange_halos(h);
         // Update g
-        for (size_t i=first; i<last; i++) g[i] = g_cell(i);
+        for (size_t i=first; i<last; i++) update_g_cell(i);
         exchange_halos(g);
         // Increment and return t
         t += time_step;

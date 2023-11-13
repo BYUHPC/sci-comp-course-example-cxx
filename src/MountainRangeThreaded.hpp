@@ -42,9 +42,9 @@ public:
             }, std::views::iota(0ul, nthreads)),
             step_workers([this](auto tid){ // https://tinyurl.com/byusc-lambda
                 auto [first, last] = mtn_utils::divided_cell_range(n, tid, nthreads);
-                for (size_t i=first; i<last; i++) h[i] += iter_time_step * g[i];
+                for (size_t i=first; i<last; i++) update_h_cell(i);
                 step_barrier.arrive_and_wait(); // h has to be completely updated before g update can start
-                for (size_t i=first; i<last; i++) g[i] = g_cell(i);
+                for (size_t i=first; i<last; i++) update_g_cell(i);
             }, std::views::iota(0ul, nthreads)),
             step_barrier(nthreads) {
         step(0); // initialize g

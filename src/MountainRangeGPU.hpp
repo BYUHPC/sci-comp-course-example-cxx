@@ -1,6 +1,7 @@
 #ifndef MOUNTAIN_RANGE_GPU_H
 #define MOUNTAIN_RANGE_GPU_H
 #include <cstdint>
+#include <cmath>
 #include <algorithm>
 #include <numeric>
 #include <execution>
@@ -39,17 +40,12 @@ public:
     value_type dsteepness() {
         auto [first, last] = index_range(h); // https://tinyurl.com/byusc-structbind
         auto ds = ds_cell(0);
-        auto ds_bounds_check = [n=h.size()](auto h, auto g, auto i){
-            return ds_cell<false>(h, g, n, i);
-        };
         ds += std::transform_reduce(std::execution::par_unseq, first+1, last-1, value_type{0},
                                     [](auto a, auto b){ return a + b; },                   // reduce
                                     [n=h.size(), h=h.data(), g=g.data()](auto i){ // transform
                                         return (h[i+1] - h[i-1]) * (g[i+1] - g[i-1]) / 2 / n;
-                                        //return ds_bounds_check(h, g, i);
-                                        //return ds_cell<false>(h, g, size, i); // false turns off bounds checking
                                     }); // https://tinyurl.com/byusc-lambda
-        ds += ds_cell(h.size()-1);
+        ds += ds_cell(n-1);
         return ds;
     }
 
@@ -62,12 +58,13 @@ public:
                           h[i] += time_step * g[i];
                       }); // https://tinyurl.com/byusc-lambda
         // Update g
-        g[0] = g_cell(0);
+        update_g_cell(0);
         std::for_each(std::execution::par_unseq, first+1, last-1,
                       [r=r.data(), h=h.data(), g=g.data(), size=h.size()](auto i){
-                          g[i] = g_cell<false>(r, h, size, i); // false turns off bounds checking
+                          auto L = (h[i-1] + h[i+1]) / 2 - h[i];
+                          g[i] = r[i] - pow(h[i], 3) + L;
                       }); // https://tinyurl.com/byusc-lambda
-        g[g.size()-1] = g_cell(g.size()-1);
+        update_g_cell(n-1);
         // Update simulation time
         t += time_step;
         return t;

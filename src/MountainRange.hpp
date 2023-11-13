@@ -234,32 +234,22 @@ public:
 
 
     // Helpers for step and dsteepness
-    template <bool BoundsCheck=true>
-    constexpr static value_type g_cell(const auto r, const auto h, auto size, auto i) {
-        auto left = i-1, right = i+1;
-        if constexpr (BoundsCheck) {
-            left =  i == 0      ? i : left;
-            right = i == size-1 ? i : right;
-        }
+    constexpr void update_g_cell(auto i) {
+        auto left  = i>0          ? i-1 : i;
+        auto right = i<g.size()-1 ? i+1 : i;
         auto L = (h[left] + h[right]) / 2 - h[i];
-        return r[i] - pow(h[i], 3) + L;
+        g[i] = r[i] - pow(h[i], 3) + L;
     }
 
-    template <bool BoundsCheck=true>
-    constexpr value_type ds_cell(const auto h, const auto g, auto size, auto i) const {
-        auto left = i-1, right = i+1;
-        if constexpr (BoundsCheck) {
-            left =  i == 0      ? i : left;
-            right = i == size-1 ? i : right;
-        }
+    constexpr void update_h_cell(auto i) {
+        h[i] += g[i] * dt;
+    }
+
+    constexpr auto ds_cell(auto i) {
+        auto left  = i>0          ? i-1 : i;
+        auto right = i<g.size()-1 ? i+1 : i;
         return (h[right] - h[left]) * (g[right] - g[left]) / 2 / n;
     }
-
-    template <bool BoundsCheck=true>
-    constexpr value_type g_cell(auto i) const { return g_cell<BoundsCheck>(r, h, h.size(), i); }
-
-    template <bool BoundsCheck=true>
-    constexpr value_type ds_cell(auto i) const { return ds_cell<BoundsCheck>(h, g, g.size(), i); }
 };
 
 
