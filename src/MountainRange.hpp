@@ -240,8 +240,8 @@ public:
         g[i] = r[i] - pow(h[i], 3) + L;
     }
 
-    constexpr void update_h_cell(auto i) {
-        h[i] += g[i] * dt;
+    constexpr void update_h_cell(auto i, auto time_step) {
+        h[i] += g[i] * time_step;
     }
 
     constexpr auto ds_cell(auto i) const {

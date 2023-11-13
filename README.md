@@ -36,12 +36,12 @@ The binaries `initial`, `mountaindiff` and `mountainsolve_*` will be built.
 
 The other binaries mirror those that will be built for the C++ phases of the project:
 
-| Corresponding Phase | Binary | Source files |
+| Corresponding phase | Binary | Source files |
 | --- | --- | --- |
-| [Phase 1](https://byuhpc.github.io/sci-comp-course/project/phase1) | `initial` | [initial](src/initial.cpp), [MtnRngOMP](src/MountainRangeOpenMP.hpp) |
+| [Phase 1](https://byuhpc.github.io/sci-comp-course/project/phase1) | `initial` | [initial](src/initial.cpp), [MountainRangeOpenMP](src/MountainRangeOpenMP.hpp) |
 | [Phase 2](https://byuhpc.github.io/sci-comp-course/project/phase2) | `mountainsolve_serial`* | [MountainRangeOpenMP](src/MountainRangeOpenMP.hpp) |
 | [Phase 3](https://byuhpc.github.io/sci-comp-course/project/phase3) | `mountainsolve_openmp` | [MountainRangeOpenMP](src/MountainRangeOpenMP.hpp) |
-| [Phase 5](https://byuhpc.github.io/sci-comp-course/project/phase5) | `mountainsolve_thread` | [MountainRangeThreaded](src/MountainRangeThreaded.hpp), [CLTP](CoordinatedLoopingThreadpoolCXX/CoordinatedLoopingThreadpool.hpp) |
+| [Phase 5](https://byuhpc.github.io/sci-comp-course/project/phase5) | `mountainsolve_thread` | [MountainRangeThreaded](src/MountainRangeThreaded.hpp) |
 | [Phase 7](https://byuhpc.github.io/sci-comp-course/project/phase7) | `mountainsolve_mpi`* | [MountainRangeMPI](src/MountainRangeMPI.hpp) |
 | [Phase 8](https://byuhpc.github.io/sci-comp-course/project/phase8) | `mountainsolve_gpu`* | [MountainRangeGPU](src/MountainRangeGPU.hpp) |
 
