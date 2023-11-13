@@ -38,14 +38,14 @@ The other binaries mirror those that will be built for the C++ phases of the pro
 
 | Corresponding Phase | Binary | Source files |
 | --- | --- | --- |
-| [Phase 1](https://byuhpc.github.io/sci-comp-course/project/phase1) | `initial` | [initial](src/initial.cpp), [MtnRngSM](src/MountainRangeSharedMem.hpp), [MtnRngOMP](src/MountainRangeOpenMP.hpp) |
-| [Phase 2](https://byuhpc.github.io/sci-comp-course/project/phase2) | `mountainsolve_serial`* | [mountainsolve_openmp](src/mountainsolve_openmp.cpp), [MtnRngSM](src/MountainRangeSharedMem.hpp), [MtnRngOMP](src/MountainRangeOpenMP.hpp) |
-| [Phase 3](https://byuhpc.github.io/sci-comp-course/project/phase3) | `mountainsolve_openmp` | [mountainsolve_openmp](src/mountainsolve_openmp.cpp), [MtnRngSM](src/MountainRangeSharedMem.hpp), [MtnRngOMP](src/MountainRangeOpenMP.hpp) |
-| [Phase 5](https://byuhpc.github.io/sci-comp-course/project/phase5) | `mountainsolve_thread` | [mountainsolve_thread](src/mountainsolve_thread.cpp), [MtnRngSM](src/MountainRangeSharedMem.hpp), [MtnRngThrd](src/MountainRangeThreaded.hpp), [CLTP](CoordinatedLoopingThreadpoolCXX/CoordinatedLoopingThreadpool.hpp) |
-| [Phase 7](https://byuhpc.github.io/sci-comp-course/project/phase7) | `mountainsolve_mpi`* | [mountainsolve_mpi](src/mountainsolve_mpi.cpp), [MtnRngMPI](src/MountainRangeMPI.hpp) |
-| [Phase 8](https://byuhpc.github.io/sci-comp-course/project/phase8) | `mountainsolve_gpu`* | [mountainsolve_gpu](src/mountainsolve_gpu.cpp), [MtnRngSM](src/MountainRangeSharedMem.hpp), [MtnRngGPU](src/MountainRangeGPU.hpp) |
+| [Phase 1](https://byuhpc.github.io/sci-comp-course/project/phase1) | `initial` | [initial](src/initial.cpp), [MtnRngOMP](src/MountainRangeOpenMP.hpp) |
+| [Phase 2](https://byuhpc.github.io/sci-comp-course/project/phase2) | `mountainsolve_serial`* | [MountainRangeOpenMP](src/MountainRangeOpenMP.hpp) |
+| [Phase 3](https://byuhpc.github.io/sci-comp-course/project/phase3) | `mountainsolve_openmp` | [MountainRangeOpenMP](src/MountainRangeOpenMP.hpp) |
+| [Phase 5](https://byuhpc.github.io/sci-comp-course/project/phase5) | `mountainsolve_thread` | [MountainRangeThreaded](src/MountainRangeThreaded.hpp), [CLTP](CoordinatedLoopingThreadpoolCXX/CoordinatedLoopingThreadpool.hpp) |
+| [Phase 7](https://byuhpc.github.io/sci-comp-course/project/phase7) | `mountainsolve_mpi`* | [MountainRangeMPI](src/MountainRangeMPI.hpp) |
+| [Phase 8](https://byuhpc.github.io/sci-comp-course/project/phase8) | `mountainsolve_gpu`* | [MountainRangeGPU](src/MountainRangeGPU.hpp) |
 
-In addition to the source files listed above, each binary depends on [MtnRng](src/MountainRange.hpp), and each `mountainsolve_*` depends on [binary_io](simple-cxx-binary-io/binary_io.hpp) and [run_solver](src/run_solver.hpp).
+In addition to the source files listed above, each binary uses the base class [MountainRange](src/MountainRange.hpp), and each `mountainsolve_*` uses [binary_io](simple-cxx-binary-io/binary_io.hpp) and [mountainsolve](src/run_solver.hpp).
 
 \* `mountainsolve_serial` uses identical code to `mountainsolve_openmp`, but is compiled without OpenMP--part of the beauty of OpenMP. `mountainsolve_mpi` is only built if an MPI compiler is found. `mountainsolve_gpu` is only built if the compiler is [Nvidia's HPC SDK](https://developer.nvidia.com/hpc-sdk).
 
