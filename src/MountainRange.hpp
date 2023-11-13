@@ -41,7 +41,8 @@ public:
 
     // Constructors
     // From an uplift rate, height, and time
-    MountainRange(const decltype(r) &r, const decltype(h) &h, decltype(t) t): N{1}, n{r.size()}, r(r), h(h), g(h.size()), t{t} {}
+    MountainRange(const decltype(r) &r, const decltype(h) &h, decltype(t) t): N{1}, n{r.size()}, t{t},
+                                                                              r(r), h(h), g(h.size()) {}
 
     // From an uplift rate; simulation time and height are initialized to zero
     MountainRange(const decltype(r) &r): MountainRange(r, decltype(h)(r.size()), 0) {}
@@ -51,7 +52,7 @@ public:
     // Handle problems reading and writing
 private:
     static void handle_wrong_dimensions() {
-        throw std::logic_error("This implementation only handles 1-dimensional mountain ranges");
+        throw std::logic_error("Input file is corrupt or multi-dimensional, which this implementation doesn't support");
     }
     static void handle_wrong_file_size() {
         throw std::logic_error("Input file appears to be corrupt");
@@ -74,6 +75,7 @@ protected:
     auto this_process_cell_range() const {
         auto [first, last] = mtn_utils::divided_cell_range(n, mpl::environment::comm_world().rank(),
                                                               mpl::environment::comm_world().size());
+                                                              // https://tinyurl.com/byusc-structbind
         if constexpr (IncludeHalos) {
             first = first == 0 ? first : first-1;
             last  = last  == n ? last  : last+1;
@@ -84,7 +86,7 @@ protected:
 private:
     // Figure out how big this process should make its arrays
     auto this_process_cell_count() const {
-        auto [first, last] = this_process_cell_range<true>(); // include halos
+        auto [first, last] = this_process_cell_range<true>(); // includes halos; https://tinyurl.com/byusc-structbind
         return last - first;
     }
 
@@ -111,7 +113,7 @@ private:
                                   h(this_process_cell_count()),
                                   g(this_process_cell_count()) {
         // Read in this process's portion of r and h
-        auto [first, last] = this_process_cell_range<true>(); // include halos
+        auto [first, last] = this_process_cell_range<true>(); // include halos; https://tinyurl.com/byusc-structbind
         auto layout = mpl::vector_layout<value_type>(r.size());
         auto r_offset = header_size + sizeof(value_type) * first;
         auto h_offset = r_offset + sizeof(value_type) * n;
@@ -129,13 +131,14 @@ public:
 
     // Write to a file with MPI I/O
     void write(const char *const filename) const try {
-        auto f = mpl::file(mpl::environment::comm_world(), filename, mpl::file::access_mode::create | mpl::file::access_mode::write_only);
+        auto f = mpl::file(mpl::environment::comm_world(), filename,
+                           mpl::file::access_mode::create | mpl::file::access_mode::write_only);
         // Write header
         f.write_all(N);
         f.write_all(n);
         f.write_all(t);
         // Write this process's portion of r and h
-        auto [first, last] = this_process_cell_range<false>(); // don't include halos
+        auto [first, last] = this_process_cell_range<false>(); // without halos; https://tinyurl.com/byusc-structbind
         auto layout = mpl::vector_layout<value_type>(last-first);
         auto r_offset = header_size + sizeof(value_type) * first;
         auto h_offset = r_offset + sizeof(value_type) * n;
@@ -160,15 +163,15 @@ private:
     }
 
     // Read from a std::istream
-    MountainRange(std::istream &&s, size_t file_size=0): N{[&s, this]{
+    MountainRange(std::istream &&s, size_t file_size=0): N{[&s, this]{ // https://tinyurl.com/byusc-lambdai
                                                              auto ret = try_read_bytes<size_type>(s);
                                                              if (ret != 1) handle_wrong_dimensions();
                                                              return ret;
                                                          }()},
-                                                         n{[&s, file_size, this]{
+                                                         n{[&s, file_size, this]{ // https://tinyurl.com/byusc-lambdai
                                                              auto ret = try_read_bytes<size_type>(s);
-                                                             auto expected_file_size = header_size + sizeof(value_type) * ret * 2;
-                                                             if (expected_file_size != file_size) handle_wrong_file_size();
+                                                             auto expected_size = header_size+sizeof(value_type)*ret*2;
+                                                             if (expected_size != file_size) handle_wrong_file_size();
                                                              return ret;
                                                          }()},
                                                          t{try_read_bytes<decltype(t)>(s)},
@@ -179,8 +182,10 @@ private:
 public:
     // Constructor taking a filename
     MountainRange(const char *const filename) try: MountainRange(std::ifstream(filename),
-                                                                 std::filesystem::file_size(filename)) {}
-                                              catch (const std::ios_base::failure &e) {
+                                                                 std::filesystem::file_size(filename)) {
+                                              } catch (const std::ios_base::failure &e) {
+                                                  handle_read_failure(filename);
+                                              } catch (const std::filesystem::filesystem_error &e) {
                                                   handle_read_failure(filename);
                                               }
 

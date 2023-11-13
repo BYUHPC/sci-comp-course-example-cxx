@@ -27,9 +27,9 @@ class MountainRangeMPI: public MountainRange {
     mpl::communicator comm_world;
 
     // Which local cells this process should iterate over
-    // Usually 1:n-1, but includes the first/last if this is the first or last process
+    // Usually 1:localrows-1, but includes the first/last if this is the first or last process
     auto local_cell_range() const {
-        auto [global_first, global_last] = this_process_cell_range<true>(); // include halos
+        auto [global_first, global_last] = this_process_cell_range<true>(); // https://tinyurl.com/byusc-structbind
         size_t first = global_first == 0 ? 0        : 1;
         size_t last =  global_last  == n ? r.size() : r.size()-1;
         return std::array{first, last};
@@ -37,7 +37,8 @@ class MountainRangeMPI: public MountainRange {
 
 public:
     // Constructor
-    MountainRangeMPI(auto && ...args): MountainRange(args...), comm_world{mpl::environment::comm_world()} {
+    MountainRangeMPI(auto && ...args): MountainRange(args...),
+                                       comm_world{mpl::environment::comm_world()} { // https://tinyurl.com/byusc-parpack
         step(0); // initialize g
     }
 
@@ -63,7 +64,7 @@ private:
         // Tags for sends and receives
         auto left_tag  = mpl::tag_t{0}, right_tag = mpl::tag_t{1}; // direction of data flow is indicated
         // Figure out where we are globally so we can know whether to send data left or right
-        auto [global_first, global_last] = this_process_cell_range<true>(); // include halos
+        auto [global_first, global_last] = this_process_cell_range<true>();  // https://tinyurl.com/byusc-structbind
         // Exchange halos with the process to the left if there is such a process
         if (global_first > 0) {
             comm_world.sendrecv(first_real_cell, comm_world.rank()-1, left_tag,   // send
@@ -79,7 +80,7 @@ private:
 public:
     // Iterate from t to t+time_step in one step
     value_type step(value_type time_step) {
-        auto [first, last] = local_cell_range();
+        auto [first, last] = local_cell_range(); // https://tinyurl.com/byusc-structbind
         // Update h
         for (size_t i=first; i<last; i++) h[i] += time_step * g[i];
         exchange_halos(h);

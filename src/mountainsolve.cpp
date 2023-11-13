@@ -83,9 +83,9 @@ int main(int argc, char **argv) {
 
     // Handle errors
     } catch (const std::logic_error &e) {
-        print<stream::stderr>(e.what());
+        print<stream::stderr>(e.what(), "; aborting");
     } catch(const std::exception &e) {
-        print<stream::stderr>("Unrecognized error: ", e.what());
+        print<stream::stderr>("Unrecognized error: ", e.what(), "; aborting");
     }
     return 1;
 }
