@@ -235,8 +235,7 @@ public:
 
     // Helpers for step and dsteepness
     constexpr void update_g_cell(auto i) {
-        auto left  = i>0          ? i-1 : i;
-        auto right = i<g.size()-1 ? i+1 : i;
+        auto [left, right] = mtn_utils::neighbor_cells(i, n);
         auto L = (h[left] + h[right]) / 2 - h[i];
         g[i] = r[i] - pow(h[i], 3) + L;
     }
@@ -245,9 +244,8 @@ public:
         h[i] += g[i] * dt;
     }
 
-    constexpr auto ds_cell(auto i) {
-        auto left  = i>0          ? i-1 : i;
-        auto right = i<g.size()-1 ? i+1 : i;
+    constexpr auto ds_cell(auto i) const {
+        auto [left, right] = mtn_utils::neighbor_cells(i, n);
         return (h[right] - h[left]) * (g[right] - g[left]) / 2 / n;
     }
 };

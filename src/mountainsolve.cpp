@@ -67,12 +67,10 @@ int main(int argc, char **argv) {
     auto outfile = argv[2];
 
     // Run
-    bool successful_read = false; // until proven otherwise
     try {
         // Read from infile
         auto m = MtnRange(infile);
         print("Successfully read ", infile);
-        successful_read = true;
         // Solve
         m.solve();
         print("Solved; simulation time: ", m.sim_time());

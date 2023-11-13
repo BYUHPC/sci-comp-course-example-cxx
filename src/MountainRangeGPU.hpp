@@ -39,13 +39,13 @@ public:
     // Steepness derivative
     value_type dsteepness() {
         auto [first, last] = index_range(h); // https://tinyurl.com/byusc-structbind
-        auto ds = ds_cell(0);
-        ds += std::transform_reduce(std::execution::par_unseq, first+1, last-1, value_type{0},
-                                    [](auto a, auto b){ return a + b; },                   // reduce
-                                    [n=h.size(), h=h.data(), g=g.data()](auto i){ // transform
-                                        return (h[i+1] - h[i-1]) * (g[i+1] - g[i-1]) / 2 / n;
-                                    }); // https://tinyurl.com/byusc-lambda
-        ds += ds_cell(n-1);
+        auto ds = std::transform_reduce(std::execution::par_unseq, first, last, value_type{0},
+                                        [](auto a, auto b){ return a + b; },                   // reduce
+                                        [n=h.size(), h=h.data(), g=g.data()](auto i){ // transform
+                                            auto [left, right] = mtn_utils::neighbor_cells(i, n);
+                                            return (h[right] - h[left]) * (g[right] - g[left]) / 2 / n;
+                                            //return (h[i+1] - h[i-1]) * (g[i+1] - g[i-1]) / 2 / n;
+                                        }); // https://tinyurl.com/byusc-lambda
         return ds;
     }
 
@@ -58,13 +58,12 @@ public:
                           h[i] += time_step * g[i];
                       }); // https://tinyurl.com/byusc-lambda
         // Update g
-        update_g_cell(0);
-        std::for_each(std::execution::par_unseq, first+1, last-1,
-                      [r=r.data(), h=h.data(), g=g.data(), size=h.size()](auto i){
-                          auto L = (h[i-1] + h[i+1]) / 2 - h[i];
+        std::for_each(std::execution::par_unseq, first, last,
+                      [r=r.data(), h=h.data(), g=g.data(), n=n](auto i){
+                          auto [left, right] = mtn_utils::neighbor_cells(i, n);
+                          auto L = (h[left] + h[right]) / 2 - h[i];
                           g[i] = r[i] - pow(h[i], 3) + L;
                       }); // https://tinyurl.com/byusc-lambda
-        update_g_cell(n-1);
         // Update simulation time
         t += time_step;
         return t;
