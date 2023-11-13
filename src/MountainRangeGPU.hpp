@@ -39,14 +39,12 @@ public:
     // Steepness derivative
     value_type dsteepness() {
         auto [first, last] = index_range(h); // https://tinyurl.com/byusc-structbind
-        auto ds = std::transform_reduce(std::execution::par_unseq, first, last, value_type{0},
-                                        [](auto a, auto b){ return a + b; },                   // reduce
-                                        [n=h.size(), h=h.data(), g=g.data()](auto i){ // transform
-                                            auto [left, right] = mtn_utils::neighbor_cells(i, n);
-                                            return (h[right] - h[left]) * (g[right] - g[left]) / 2 / n;
-                                            //return (h[i+1] - h[i-1]) * (g[i+1] - g[i-1]) / 2 / n;
-                                        }); // https://tinyurl.com/byusc-lambda
-        return ds;
+        return std::transform_reduce(std::execution::par_unseq, first, last, value_type{0}, // initial value
+                                     [](auto a, auto b){ return a + b; },                   // reduce
+                                     [n=n, h=h.data(), g=g.data()](auto i){                 // transform
+                                         auto [left, right] = mtn_utils::neighbor_cells(i, n);
+                                         return (h[right] - h[left]) * (g[right] - g[left]) / 2;
+                                     }) / n; // https://tinyurl.com/byusc-lambda
     }
 
     // Iterate from t to t+time_step in one step
@@ -59,7 +57,7 @@ public:
                       }); // https://tinyurl.com/byusc-lambda
         // Update g
         std::for_each(std::execution::par_unseq, first, last,
-                      [r=r.data(), h=h.data(), g=g.data(), n=n](auto i){
+                      [n=n, r=r.data(), h=h.data(), g=g.data()](auto i){
                           auto [left, right] = mtn_utils::neighbor_cells(i, n);
                           auto L = (h[left] + h[right]) / 2 - h[i];
                           g[i] = r[i] - pow(h[i], 3) + L;
