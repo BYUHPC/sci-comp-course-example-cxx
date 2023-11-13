@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <numeric>
 #include <execution>
-#include "MountainRangeSharedMem.hpp"
+#include "MountainRange.hpp"
 
 
 
@@ -39,12 +39,17 @@ public:
     value_type dsteepness() {
         auto [first, last] = index_range(h); // https://tinyurl.com/byusc-structbind
         auto ds = ds_cell(0);
+        auto ds_bounds_check = [n=h.size()](auto h, auto g, auto i){
+            return ds_cell<false>(h, g, n, i);
+        };
         ds += std::transform_reduce(std::execution::par_unseq, first+1, last-1, value_type{0},
-                                    std::plus<>(),                                   // reduce
-                                    [h=h.data(), g=g.data(), size=h.size()](auto i){ // transform
-                                        return ds_cell<false>(h, g, size, i); // false turns off bounds checking
+                                    [](auto a, auto b){ return a + b; },                   // reduce
+                                    [n=h.size(), h=h.data(), g=g.data()](auto i){ // transform
+                                        return (h[i+1] - h[i-1]) * (g[i+1] - g[i-1]) / 2 / n;
+                                        //return ds_bounds_check(h, g, i);
+                                        //return ds_cell<false>(h, g, size, i); // false turns off bounds checking
                                     }); // https://tinyurl.com/byusc-lambda
-        ds += ds_cell(n-1);
+        ds += ds_cell(h.size()-1);
         return ds;
     }
 
@@ -62,7 +67,7 @@ public:
                       [r=r.data(), h=h.data(), g=g.data(), size=h.size()](auto i){
                           g[i] = g_cell<false>(r, h, size, i); // false turns off bounds checking
                       }); // https://tinyurl.com/byusc-lambda
-        g[n-1] = g_cell(n-1);
+        g[g.size()-1] = g_cell(g.size()-1);
         // Update simulation time
         t += time_step;
         return t;
