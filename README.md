@@ -51,6 +51,8 @@ In addition to the source files listed above, each binary uses the base class [M
 
 Each generated `mountainsolve_*` has a help message explaining its usage; use `<binary-name> --help` to print it.
 
+[`initial.jl`](src/initial.jl) contains example code for [phase 9](https://byuhpc.github.io/sci-comp-course/project/phase9); it can be run with `julia initial.jl`.
+
 
 
 ## The Problem: Orogeny
