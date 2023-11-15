@@ -118,8 +118,8 @@ The **steepness derivative** of a mountain range could be calculated in Julia th
 function dsteepness(h, g)
     ds = 0
     for i in eachindex(h, g)
-        left  = min(i-1, firstindex(h))
-        right = max(i+1,  lastindex(h))
+        left  = max(i-1, firstindex(h))
+        right = min(i+1,  lastindex(h))
         ds += (h[right]-h[left]) * (g[right]-g[left]) / 2
     end
     return ds/length(h)
