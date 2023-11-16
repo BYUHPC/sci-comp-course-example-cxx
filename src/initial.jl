@@ -35,7 +35,7 @@ end
 # Return `2/X ∫∇h⋅∇ḣ dx`, where X is the length of h.
 function dsteepness(h, r)
     # Calculate growth rate
-    g = similar(h) #zeros(length(h))
+    g = similar(h)
     dhdt!(g, h, r, 0)
     # Calculate ds
     return sum(function(i)
