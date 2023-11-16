@@ -1,11 +1,15 @@
 #!/usr/bin/env julia
 
-
-
 using DifferentialEquations
 
 
 
+# This is an implementation of the same problem as solved in initial.cpp, but using Julia's
+# DifferentialEquations library. It's not optimized, instead emphasizing understandability.
+
+
+
+# Barebones mountain range struct with uplift rate, height, and simulation time
 struct MountainRange
     r::Vector{Float64} # uplift rate
     h::Vector{Float64} # current height
@@ -14,33 +18,24 @@ end
 
 
 
-"""
-    dhdt!(dh, h, r, t)
-
-Update `dh` to hold the results of `r-h³+∇²h`
-"""
+# Update dh to hold the result of `r-h³+∇²h`
 function dhdt!(dh, h, r, t)
-    # First cell is different due to boundary condition
-    dh[begin] = r[begin] - h[begin]^3 + (h[begin+1]-h[begin])/2
-    # Middle cells can be broadcast
-    M = CartesianIndices((firstindex(dh)+1:lastindex(dh)-1)) # interior indices
-    L = @views (h[begin:end-2] .+ h[begin+2:end])./2 .- h[M]
-    @views dh[M] .= r[M] .- h[M].^3 .+ L
-    # Last cell is also different
-    dh[end] = r[end] - h[end]^3 + (h[end-1]-h[end])/2
+    # Laplacian array; first and last cells are special cases due to boundary condition
+    L = [(h[begin+1]-h[begin])/2;
+         @views (h[begin:end-2].+h[begin+2:end])./2 .- h[begin+1:end-1];
+         (h[end-1]-h[end])/2]
+    # Update dh in place
+    dh .= r .- h.^3 .+ L
+    # No need to return anything since dh has been mutated
     return nothing
 end
 
 
 
-"""
-    dsteepness(h, r)
-
-Return `2/X ∫∇h⋅∇ḣ dx`, where `X` is the length of `h`.
-"""
+# Return `2/X ∫∇h⋅∇ḣ dx`, where X is the length of h.
 function dsteepness(h, r)
     # Calculate growth rate
-    g = zeros(length(h))
+    g = similar(h) #zeros(length(h))
     dhdt!(g, h, r, 0)
     # Calculate ds
     return sum(function(i)
@@ -52,11 +47,11 @@ end
 
 
 
+# Solve and return a mountain range using ODEProblem
 function solve!(m::MountainRange)
     cb = ContinuousCallback((h, t, integrator)->dsteepness(h, m.r), terminate!)
     timebounds = (0.0, typemax(eltype(m.r)))
-    prob = ODEProblem{true}(dhdt!, m.h, timebounds, m.r,
-                            callback=cb, save_on=false, save_start=false)
+    prob = ODEProblem{true}(dhdt!, m.h, timebounds, m.r, callback=cb)
     sol = solve(prob)
     m.h .= last(sol.u)
     m.t[] += last(sol.t)
@@ -65,6 +60,7 @@ end
 
 
 
+# Run the same problem as initial.cpp
 function main()
     n = 1000
     plateau = 251:500
@@ -77,6 +73,7 @@ end
 
 
 
+# If this is the file being executed, run main
 if abspath(PROGRAM_FILE) == @__FILE__
     main()
 end
