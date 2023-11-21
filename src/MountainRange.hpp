@@ -28,9 +28,9 @@ protected:
 
 
     // Members and accessors
-    const size_type N, n;               // size
+    const size_type N, n;            // dimensions and size
     value_type t;                    // simulation time
-    std::vector<value_type> r, h, g; // height and growth rate
+    std::vector<value_type> r, h, g; // uplift rate, height, and growth rate
 public:
     auto size()         const { return n; }
     auto sim_time()     const { return t; }
