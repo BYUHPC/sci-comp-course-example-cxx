@@ -66,12 +66,9 @@ endif()
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL NVHPC)
     message("-- Found nvc++, will build mountainsolve_gpu")
     set(NVCXX_COMPUTE_CAPABILITY "60" CACHE STRING "nvc++ GPU compute capability")
-    set(NVCXX_CPU_ARCHITECTURE "haswell" CACHE STRING "CPU architecture that nvc++ will compile for")
     add_executable(mountainsolve_gpu src/mountainsolve.cpp)
-    target_compile_options(mountainsolve_gpu PRIVATE
-                           "-tp=${NVCXX_CPU_ARCHITECTURE}" "-stdpar=gpu" "-gpu=sm_${NVCXX_COMPUTE_CAPABILITY}")
-    target_link_options(   mountainsolve_gpu PRIVATE
-                           "-tp=${NVCXX_CPU_ARCHITECTURE}" "-stdpar=gpu" "-gpu=sm_${NVCXX_COMPUTE_CAPABILITY}")
+    set_target_properties(mountainsolve_gpu PROPERTIES COMPILE_FLAGS "-stdpar=gpu -gpu=sm_${NVCXX_COMPUTE_CAPABILITY}"
+                                                       LINK_FLAGS    "-stdpar=gpu -gpu=sm_${NVCXX_COMPUTE_CAPABILITY}")
     target_compile_definitions(mountainsolve_gpu PUBLIC USE_GPU)
 else()
     message("-- Did not find nvc++, won't build mountainsolve_gpu")
