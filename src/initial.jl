@@ -21,9 +21,11 @@ end
 # Update dh to hold the result of `r-h³+∇²h`
 function dhdt!(dh, h, r, t)
     # Laplacian array; first and last cells are special cases due to boundary condition
-    L = [(h[begin+1] - h[begin])/2;
-         @views (h[begin:end-2] .+ h[begin+2:end]) ./2 .- h[begin+1:end-1];
-         (h[end  -1] - h[end  ])/2]
+    L = [begin
+             left  = max(i-1, firstindex(h))
+             right = min(i+1, lastindex(h))
+             (h[left]+h[right])/2 - h[i]
+         end for i in eachindex(h)]
 
     # Update dh in place
     dh .= r .- h.^3 .+ L
