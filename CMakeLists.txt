@@ -16,6 +16,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 # Include everything in src, and binary_io.hpp
 include_directories(src)
 include_directories(simple-cxx-binary-io)
+set(COMMON_INCLUDES src/MountainRange.hpp src/utils.hpp simple-cxx-binary-io/binary_io.hpp)
 
 # Default to RelWithDebInfo build
 if(NOT CMAKE_BUILD_TYPE)
@@ -29,25 +30,25 @@ endif()
 # BINARIES #############################################################################################################
 
 # mountaindiff
-add_executable(mountaindiff src/mountaindiff.cpp)
+add_executable(mountaindiff src/mountaindiff.cpp src/MountainRangeOpenMP.hpp ${COMMON_INCLUDES})
 
 # initial
-add_executable(initial src/initial.cpp)
+add_executable(initial src/initial.cpp src/MountainRangeOpenMP.hpp ${COMMON_INCLUDES})
 
 # mountainsolve_serial
-add_executable(mountainsolve_serial src/mountainsolve.cpp)
+add_executable(mountainsolve_serial src/mountainsolve.cpp src/MountainRangeOpenMP.hpp ${COMMON_INCLUDES})
 target_compile_definitions(mountainsolve_serial PUBLIC USE_OPENMP)
 
 # mountainsolve_openmp
 if(OpenMP_CXX_FOUND)
-    add_executable(mountainsolve_openmp src/mountainsolve.cpp)
+    add_executable(mountainsolve_openmp src/mountainsolve.cpp src/MountainRangeOpenMP.hpp ${COMMON_INCLUDES})
     target_link_libraries(mountainsolve_openmp OpenMP::OpenMP_CXX)
     target_compile_definitions(mountainsolve_openmp PUBLIC USE_OPENMP)
 endif()
 
 # mountainsolve_thread
 if(Threads_FOUND)
-    add_executable(mountainsolve_thread src/mountainsolve.cpp)
+    add_executable(mountainsolve_thread src/mountainsolve.cpp src/MountainRangeThreaded.hpp ${COMMON_INCLUDES})
     target_include_directories(mountainsolve_thread PRIVATE CoordinatedLoopingThreadpoolCXX)
     target_link_libraries(mountainsolve_thread Threads::Threads)
     target_compile_definitions(mountainsolve_thread PUBLIC USE_THREAD)
@@ -56,7 +57,7 @@ endif()
 # mountainsolve_mpi
 if(MPI_CXX_FOUND)
     find_package(mpl REQUIRED)
-    add_executable(mountainsolve_mpi src/mountainsolve.cpp)
+    add_executable(mountainsolve_mpi src/mountainsolve.cpp src/MountainRangeMPI.hpp ${COMMON_INCLUDES})
     target_link_libraries(mountainsolve_mpi PRIVATE MPI::MPI_CXX)
     target_link_libraries(mountainsolve_mpi PRIVATE mpl::mpl)
     target_compile_definitions(mountainsolve_mpi PUBLIC USE_MPI)
@@ -66,7 +67,7 @@ endif()
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL NVHPC)
     message("-- Found nvc++, will build mountainsolve_gpu")
     set(NVCXX_COMPUTE_CAPABILITY "60" CACHE STRING "nvc++ GPU compute capability")
-    add_executable(mountainsolve_gpu src/mountainsolve.cpp)
+    add_executable(mountainsolve_gpu src/mountainsolve.cpp src/MountainRangeGPU.hpp ${COMMON_INCLUDES})
     set_target_properties(mountainsolve_gpu PROPERTIES COMPILE_FLAGS "-stdpar=gpu -gpu=sm_${NVCXX_COMPUTE_CAPABILITY}"
                                                        LINK_FLAGS    "-stdpar=gpu -gpu=sm_${NVCXX_COMPUTE_CAPABILITY}")
     target_compile_definitions(mountainsolve_gpu PUBLIC USE_GPU)
