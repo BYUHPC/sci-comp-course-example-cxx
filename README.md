@@ -1,6 +1,6 @@
 # BYU Scientific Computing Course Example C++
 
-This repository contains code that parallels what students need to create for the [BYU Scientific Computing Course's semester-long project](https://byuhpc.github.io/sci-comp-course/project/overview.html). [The problem](#the-problem-orogeny), of course, is different, but mirroring the structure and style shown here will serve students well.
+This repository contains code that parallels what students need to create for the [BYU Scientific Computing Course's semester-long project](https://byuhpc.github.io/sci-comp-course/project/overview.html). [The problem](#the-problem-orogeny), of course, is different, but imitating this code should serve most students well. Some sacrifices to good C++ style have been made for ease of understanding by students unfamiliar with modern C++.
 
 
 
@@ -226,7 +226,7 @@ $$\frac{\partial}{\partial t} \left\Vert \nabla v \right\Vert_2^2 = \sum_n^N \fr
 
 ...where each of $v_n$ are the elements of $N$-dimensional $v$. By the chain rule this becomes:
 
-$$\sum_n^N \frac{\partial}{\partial t} v_n^2 = \sum_n^N 2 \frac{\partial v}{\partial v_n} \frac{\partial\dot v}{\partial v_n}$$
+$$\sum_n^N \frac{\partial}{\partial t} \left( \frac{\partial v}{\partial v_n} \right)^2 = \sum_n^N 2 \frac{\partial v}{\partial v_n} \frac{\partial\dot v}{\partial v_n}$$
 
 ...where $\dot v$ represents the derivative of $v$ with respect to time. This can be simplified to:
 
