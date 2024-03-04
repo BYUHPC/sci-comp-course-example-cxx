@@ -80,7 +80,7 @@ $$L_i^{(t)} = \frac{h_{left}^{(t)} + h_{right}^{(t)}}{2} - h_i^{(t)}$$
 
 $$g_i^{(t+dt)} = r_i - \left(h_i^{(t)}\right)^3 + L_i^{(t)}$$
 
-$$h_i^{(t+dt)} = h_i^{(t)} + dt \space g_i^{(t+1)}$$
+$$h_i^{(t+dt)} = h_i^{(t)} + dt \space g_i^{(t+dt)}$$
 
 ...where $left$ and $right$ are normally $i-1$ and $i+1$ respectively, but are $i$ at the edge of the array where $i-1$ or $i+1$ would exceed the array's bounds; this fulfills the zero-derivative boundary condition of the simulation.
 
