@@ -130,7 +130,7 @@ if(BUILD_TESTING)
         # mountainsolve_mpi
         if(MPI_CXX_FOUND)
             add_test(NAME "mountainsolve_mpi works with ${N} processes"
-                     COMMAND bash "${TEST_SOLVER}" "${MTN_DIFF}" mpirun -n 3 "${CMAKE_CURRENT_BINARY_DIR}/mountainsolve_mpi"
+                     COMMAND bash "${TEST_SOLVER}" "${MTN_DIFF}" mpirun -n "${N}" "${CMAKE_CURRENT_BINARY_DIR}/mountainsolve_mpi"
                                   "${TESTING_INFILE}" "${TESTING_OUTFILE}")
         endif()
     endforeach()
