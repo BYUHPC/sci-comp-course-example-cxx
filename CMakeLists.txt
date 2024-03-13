@@ -16,7 +16,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 # Include everything in src, and binary_io.hpp
 include_directories(src)
 include_directories(simple-cxx-binary-io)
-set(COMMON_INCLUDES src/MountainRange.hpp src/utils.hpp simple-cxx-binary-io/binary_io.hpp)
+set(COMMON_INCLUDES src/MountainRange.hpp simple-cxx-binary-io/binary_io.hpp)
 
 # Default to RelWithDebInfo build
 if(NOT CMAKE_BUILD_TYPE)
@@ -30,18 +30,18 @@ endif()
 # BINARIES #############################################################################################################
 
 # mountaindiff
-add_executable(mountaindiff src/mountaindiff.cpp src/MountainRangeOpenMP.hpp ${COMMON_INCLUDES})
+add_executable(mountaindiff src/mountaindiff.cpp ${COMMON_INCLUDES})
 
 # initial
-add_executable(initial src/initial.cpp src/MountainRangeOpenMP.hpp ${COMMON_INCLUDES})
+add_executable(initial src/initial.cpp ${COMMON_INCLUDES})
 
 # mountainsolve_serial
-add_executable(mountainsolve_serial src/mountainsolve.cpp src/MountainRangeOpenMP.hpp ${COMMON_INCLUDES})
+add_executable(mountainsolve_serial src/mountainsolve.cpp ${COMMON_INCLUDES})
 target_compile_definitions(mountainsolve_serial PUBLIC USE_OPENMP)
 
 # mountainsolve_openmp
 if(OpenMP_CXX_FOUND)
-    add_executable(mountainsolve_openmp src/mountainsolve.cpp src/MountainRangeOpenMP.hpp ${COMMON_INCLUDES})
+    add_executable(mountainsolve_openmp src/mountainsolve.cpp ${COMMON_INCLUDES})
     target_link_libraries(mountainsolve_openmp OpenMP::OpenMP_CXX)
     target_compile_definitions(mountainsolve_openmp PUBLIC USE_OPENMP)
 endif()
