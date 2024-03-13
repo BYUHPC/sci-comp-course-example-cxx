@@ -1,6 +1,6 @@
 #include <vector>
 #include <iostream>
-#include "MountainRangeOpenMP.hpp"
+#include "MountainRange.hpp"
 
 
 
@@ -11,9 +11,9 @@ int main() {
     size_t plateau_start = 250, plateau_end = 500;
 
     // Construct mountain range
-    std::vector<decltype(value)> r(len);
+    std::vector<decltype(value)> r(len), h(len);
     std::fill(r.begin()+plateau_start, r.begin()+plateau_end, value);
-    auto m = MountainRangeOpenMP(r);
+    auto m = MountainRange(r, h);
 
     // Solve and return
     std::cout << m.solve() << std::endl;
