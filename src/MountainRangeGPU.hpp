@@ -32,9 +32,10 @@ namespace {
 class MountainRangeGPU: public MountainRange {
 public:
     // Delegate constructor to MountainRange
-    MountainRangeGPU(auto && ...args): MountainRange(args...) { // https://tinyurl.com/byusc-parpack
-        step(0); // initialize g
-    }
+    using MountainRange::MountainRange;
+    //MountainRangeGPU(auto && ...args): MountainRange(args...) { // https://tinyurl.com/byusc-parpack
+    //    step(0); // initialize g
+    //}
 
     // Steepness derivative
     value_type dsteepness() {
@@ -42,9 +43,8 @@ public:
         return std::transform_reduce(std::execution::par_unseq, first, last, value_type{0}, // initial value
                                      [](auto a, auto b){ return a + b; },                   // reduce
                                      [n=n, h=h.data(), g=g.data()](auto i){                 // transform
-                                         auto [left, right] = mtn_utils::neighbor_cells(i, n);
-                                         return (h[right] - h[left]) * (g[right] - g[left]) / 2;
-                                     }) / n; // https://tinyurl.com/byusc-lambda
+                                         return (h[i-1] - h[i+1]) * (g[i-1] - g[i+1]) / 2;
+                                     }) / cells; // https://tinyurl.com/byusc-lambda
     }
 
     // Iterate from t to t+time_step in one step
@@ -55,13 +55,14 @@ public:
                       [h=h.data(), g=g.data(), time_step](auto i){
                           h[i] += time_step * g[i];
                       }); // https://tinyurl.com/byusc-lambda
+
         // Update g
         std::for_each(std::execution::par_unseq, first, last,
                       [n=n, r=r.data(), h=h.data(), g=g.data()](auto i){
-                          auto [left, right] = mtn_utils::neighbor_cells(i, n);
-                          auto L = (h[left] + h[right]) / 2 - h[i];
+                          auto L = (h[i-1] + h[i+1]) / 2 - h[i];
                           g[i] = r[i] - pow(h[i], 3) + L;
                       }); // https://tinyurl.com/byusc-lambda
+
         // Update simulation time
         t += time_step;
         return t;
