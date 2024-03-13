@@ -3,6 +3,25 @@
 
 
 
+namespace mr {
+    // Divide [0, n) evenly among size processes, returning the range appropriate for rank.
+    auto split_range(auto n, auto rank, auto size) {
+        auto rows_per_proc = (rows - 2) / size;
+        auto extra_rows    = (rows - 2) % size;
+        auto first = rows_per_proc * rank + std::min(rank, extra_rows) + 1;
+        auto last = first + rows_per_proc;
+        if (rank < extra_rows) {
+            last += 1;
+        }
+        if (rank == size - 1) {
+            last = rows - 1;
+        }
+        return std::array{first, last};
+    }
+}
+
+
+
 class MountainRange {
 public:
     using size_type  = size_t;

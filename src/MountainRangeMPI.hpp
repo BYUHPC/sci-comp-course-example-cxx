@@ -41,7 +41,7 @@ class MountainRangeMPI: public MountainRange {
     auto comm_size()  { return comm_world().size(); }
 
     auto this_process_cell_range() {
-        return this_process_cell_range(cells, comm_rank(), comm_world());
+        return mr::split_range(cells, comm_rank(), comm_world());
     }
 
 
@@ -68,6 +68,9 @@ class MountainRangeMPI: public MountainRange {
         auto layout = mpl::vector_layout<value_type>(r.size());
         f.read_at(r_offset, r.data(), layout);
         f.read_at(h_offset, h.data(), layout);
+
+        // Update g
+        step(0);
     }
 
 public:
