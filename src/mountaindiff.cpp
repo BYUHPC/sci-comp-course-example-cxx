@@ -2,7 +2,7 @@
 #include <numeric>
 #include <ranges>
 #include <sstream>
-#include "MountainRangeOpenMP.hpp"
+#include "MountainRange.hpp"
 
 
 
@@ -42,8 +42,8 @@ int main(int argc, char **argv) {
     auto filename2 = argv[2];
 
     // Read in both hotplates
-    const auto m1 = MountainRangeOpenMP(filename1);
-    const auto m2 = MountainRangeOpenMP(filename2);
+    const auto m1 = MountainRange(filename1);
+    const auto m2 = MountainRange(filename2);
     const auto &r1 = m1.uplift_rate(), &r2 = m2.uplift_rate(), &h1 = m1.height(), &h2 = m2.height();
     auto t1 = m1.sim_time(), t2 = m2.sim_time();
 

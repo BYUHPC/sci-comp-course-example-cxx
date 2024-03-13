@@ -36,20 +36,20 @@ namespace {
 class MountainRangeMPI: public MountainRange {
     static constexpr const size_t header_size = sizeof(ndims) + sizeof(cells) + sizeof(t);
     // Helpers
-    auto comm_world() { return mpl::environment::comm_world(); }
-    auto comm_rank()  { return comm_world().rank(); }
-    auto comm_size()  { return comm_world().size(); }
+    auto comm_world()  const { return mpl::environment::comm_world(); }
+    size_t comm_rank() const { return comm_world().rank(); }
+    size_t comm_size() const { return comm_world().size(); }
 
-    auto this_process_cell_range() {
-        return mr::split_range(cells, comm_rank(), comm_world());
+    auto this_process_cell_range() const {
+        return mr::split_range(cells, comm_rank(), comm_size());
     }
 
 
 
-    MountainRangeMPI(mpl::file &f): MountainRange(read_all_at<decltype(ndims)>(f, 0),
-                                                  read_all_at<decltype(cells)>(f, sizeof(ndims)),
-                                                  read_all_at<decltype(t)>(    f, sizeof(ndims)+sizeof(cells)),
-                                                  0, 0) { // initialize r and h to zero size, we resize them below
+    MountainRangeMPI(mpl::file &&f): MountainRange(read_at_all<decltype(ndims)>(f, 0),
+                                                   read_at_all<decltype(cells)>(f, sizeof(ndims)),
+                                                   read_at_all<decltype(t)>(    f, sizeof(ndims)+sizeof(cells)),
+                                                   0, 0) { // initialize r and h to zero size, we resize them below
         // Figure out which cells this process is in charge of
         auto [first, last] = this_process_cell_range();
         first -= 1; // include left halo
@@ -77,7 +77,7 @@ public:
     MountainRangeMPI(const char *filename) try: MountainRangeMPI(mpl::file(comm_world(), filename,
                                                                                  mpl::file::access_mode::read_only)) {
                                                  } catch (const mpl::io_failure &e) {
-                                                     handle_read_failure();
+                                                     handle_read_failure(filename);
                                                  }
 
 
@@ -93,8 +93,8 @@ public:
 
         // Figure out which part of r and h this process is in charge of writing
         auto [first, last] = this_process_cell_range(); // https://tinyurl.com/byusc-structbind
-        if (comm_rank() == 0) first -= 1; // First "halo" is actually the first row
-        if (comm_rank() == comm_size()-1) last += 1 // Last "halo" is actually the last row
+        if (comm_rank() == 0            ) first -= 1; // First "halo" is actually the first row
+        if (comm_rank() == comm_size()-1) last  += 1; // Last "halo" is actually the last row
         auto layout = mpl::vector_layout<value_type>(last-first);
         auto r_offset = header_size + sizeof(value_type) * first;
         auto h_offset = r_offset + sizeof(value_type) * r.size();
@@ -120,7 +120,7 @@ public:
         for (size_t i=1; i<r.size()-1; i++) local_ds += ds_cell(i);
 
         // Sum the ds from all processes and return it
-        comm_world.allreduce(std::plus<>(), local_ds, global_ds);
+        comm_world().allreduce(std::plus<>(), local_ds, global_ds);
         return global_ds;
     }
 
@@ -141,13 +141,13 @@ private:
 
         // Exchange halos with the process to the left if there is such a process
         if (global_first > 1) {
-            comm_world.sendrecv(first_real_cell, comm_world.rank()-1, left_tag,   // send
-                                first_halo,      comm_world.rank()-1, right_tag); // receive
+            comm_world().sendrecv(first_real_cell, comm_rank()-1, left_tag,   // send
+                                  first_halo,      comm_rank()-1, right_tag); // receive
         }
         // Exchange halos with the process to the right if this process has a real end halo
         if (global_last  < cells-1) {
-            comm_world.sendrecv(last_real_cell,  comm_world.rank()+1, right_tag,  // send
-                                last_halo,       comm_world.rank()+1, left_tag);  // receive
+            comm_world().sendrecv(last_real_cell,  comm_rank()+1, right_tag,  // send
+                                  last_halo,       comm_rank()+1, left_tag);  // receive
         }
     }
 

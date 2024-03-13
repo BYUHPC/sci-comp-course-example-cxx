@@ -6,8 +6,8 @@
 
 // Compile with -DUSE_OPENMP for OpenMP version, -DUSE_THREAD for pthread version, etc.
 #if defined(USE_OPENMP)
-#include "MountainRangeOpenMP.hpp"
-using MtnRange = MountainRangeOpenMP;
+#include "MountainRange.hpp"
+using MtnRange = MountainRange;
 #elif defined(USE_THREAD)
 #include "MountainRangeThreaded.hpp"
 using MtnRange = MountainRangeThreaded;

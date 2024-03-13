@@ -1,20 +1,26 @@
 #include <vector>
 #include <fstream>
+#include <filesystem>
+#include <charconv>
+#include <format>
+#include <cstring>
+#include <cmath>
+#include "binary_io.hpp"
 
 
 
 namespace mr {
     // Divide [0, n) evenly among size processes, returning the range appropriate for rank.
     auto split_range(auto n, auto rank, auto size) {
-        auto rows_per_proc = (rows - 2) / size;
-        auto extra_rows    = (rows - 2) % size;
-        auto first = rows_per_proc * rank + std::min(rank, extra_rows) + 1;
-        auto last = first + rows_per_proc;
-        if (rank < extra_rows) {
+        auto n_per_proc = (n - 2) / size;
+        auto extra      = (n - 2) % size;
+        auto first = n_per_proc * rank + std::min(rank, extra) + 1;
+        auto last = first + n_per_proc;
+        if (rank < extra) {
             last += 1;
         }
         if (rank == size - 1) {
-            last = rows - 1;
+            last = n - 1;
         }
         return std::array{first, last};
     }
@@ -54,12 +60,22 @@ protected:
 
 
 
+// Accessors
+public:
+    auto size()         const { return cells; }
+    auto sim_time()     const { return t; }
+    auto &uplift_rate() const { return r; }
+    auto &height()      const { return h; }
+
+
+
+
 protected:
     // The constructor that all other constructors call
     MountainRange(auto ndims, auto cells, auto t, const auto &r, const auto &h): ndims{ndims}, cells{cells}, t{t},
-                                                                                 r(r), h(h), g(h.size()) {
+                                                                                 r(r), h(h), g(h) {
         if (ndims != 1) handle_wrong_dimensions();
-        step(0)
+        step(0); // initialize g
     }
 
 
@@ -77,27 +93,30 @@ protected:
     }
 
 public:
-    MountainRange(const auto &r, const auto &h): MountainRange(1, r.size(), 0, r, h) {}
+    MountainRange(const auto &r, const auto &h): MountainRange(1ul, r.size(), 0.0, r, h) {}
 
     MountainRange(const char *filename) try: MountainRange(std::ifstream(filename)) {
-                                              } catch (const std::ios_base::failure &e) {
-                                                  handle_read_failure(filename);
-                                              } catch (const std::filesystem::filesystem_error &e) {
-                                                  handle_read_failure(filename);
-                                              }
+                                        } catch (const std::ios_base::failure &e) {
+                                            handle_read_failure(filename);
+                                        } catch (const std::filesystem::filesystem_error &e) {
+                                            handle_read_failure(filename);
+                                        }
 
     virtual void write(const char *filename) {
         auto f = std::ofstream(filename);
         try {
-            bool success = try_write_bytes(f, &ndims, &cells, &t)
-            success &= try_write_bytes(f, u.data(), u.size());
-            success &= try_write_bytes(f, v.data(), v.size());
+            try_write_bytes(f, &ndims, &cells, &t);
+            try_write_bytes(f, r.data(), r.size());
+            try_write_bytes(f, h.data(), h.size());
         } catch (const std::filesystem::filesystem_error &e) {
-            handle_write_failure();
+            handle_write_failure(filename);
         } catch (const std::ios_base::failure &e) {
-            handle_write_failure();
+            handle_write_failure(filename);
         }
     }
+
+
+
 
 
 
@@ -110,19 +129,22 @@ public:
 
 
 
-    virtual void step(value_type dt) {
+    virtual value_type step(value_type dt) {
         // Update h
         #pragma omp parallel for
         for (size_t i=0; i<h.size(); i++) update_h_cell(i, dt);
+
         // Update g
         #pragma omp parallel for
         for (size_t i=0; i<g.size(); i++) update_g_cell(i);
+
         // Increment time step
         t += dt;
+        return t;
     }
 
-    void step() {
-        step(default_dt);
+    auto step() {
+        return step(default_dt);
     }
 
 
@@ -157,7 +179,7 @@ protected:
         h[i] += g[i] * time_step;
     }
 
-    constexpr auto ds_cell(auto i) const {
-        return (h[i-1] - h[i+1]) * (g[i-1] - g[i+1]) / 2 / n;
+    constexpr value_type ds_cell(auto i) const {
+        return (h[i-1] - h[i+1]) * (g[i-1] - g[i+1]) / 2 / cells;
     }
 };

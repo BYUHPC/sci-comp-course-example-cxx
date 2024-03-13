@@ -41,7 +41,7 @@ class MountainRangeThreaded: public MountainRange {
 
 
     // Helper
-    this_thread_cell_range(auto tid) {
+    auto this_thread_cell_range(auto tid) {
         return mr::split_range(cells, tid, nthreads);
     }
 
@@ -76,7 +76,7 @@ public:
                 step_barrier.arrive_and_wait();
                 if (!continue_iteration) return false;
                 auto [first, last] = this_thread_cell_range(tid);
-                for (size_t i=first; i<last; i++) update_h_cell(i, dt);
+                for (size_t i=first; i<last; i++) update_h_cell(i, iter_time_step);
                 step_barrier.arrive_and_wait(); // h has to be completely updated before g update can start
                 for (size_t i=first; i<last; i++) update_g_cell(i);
                 step_barrier.arrive_and_wait();
@@ -101,12 +101,12 @@ public:
     }
 
     // Iterate from t to t+time_step in one step
-    value_type step(value_type time_step) {
-        iter_time_step = time_step;
+    value_type step(value_type dt) {
+        iter_time_step = dt;
         step_barrier.arrive_and_wait(); // signal workers to start updating h
         step_barrier.arrive_and_wait(); // signal workers to start updating g
         step_barrier.arrive_and_wait(); // wait for workers to finish this iteration
-        t += time_step;
+        t += dt;
         return t;
     }
 };
