@@ -1,11 +1,11 @@
 #pragma once
-#include <array>
 #include <mpl/mpl.hpp>
 #include "MountainRange.hpp"
 
 
 
 namespace {
+    // Read an element of type T from a certain offset (in bytes) in an mpl::file
     template <class T>
     T read_at_all(auto &f, auto offset) {
         std::remove_const_t<T> ret;
@@ -40,17 +40,18 @@ class MountainRangeMPI: public MountainRange {
 
 
 
-    // Helpers
+    // Determine which cells this process is in charge of updating
     auto this_process_cell_range() const {
         return mr::split_range(cells, comm_rank, comm_size);
     }
 
 
 
+    // Read a MountainRange from an mpl::file
     MountainRangeMPI(mpl::file &&f): MountainRange(read_at_all<decltype(ndims)>(f, 0),
                                                    read_at_all<decltype(cells)>(f, sizeof(ndims)),
                                                    read_at_all<decltype(t)>(    f, sizeof(ndims)+sizeof(cells)),
-                                                   0, 0) { // initialize r and h to zero size, we resize them below
+                                                   0, 0) { // initialize r and h to zero size; they're resized below
         // Figure out which cells this process is in charge of
         auto [first, last] = this_process_cell_range();
         first -= 1; // include left halo
@@ -74,7 +75,10 @@ class MountainRangeMPI: public MountainRange {
         step(0);
     }
 
+
+
 public:
+    // Read a MountainRange from a file with MPI I/O, handling errors gracefully
     MountainRangeMPI(const char *filename) try: MountainRangeMPI(mpl::file(comm_world, filename,
                                                                  mpl::file::access_mode::read_only)) {
                                            } catch (const mpl::io_failure &e) {
@@ -83,7 +87,8 @@ public:
 
 
 
-    void write(const char *filename) const try {
+    // Write a MountainRange to a file with MPI I/O, handling errors gracefully
+    void write(const char *filename) const override try {
         // Open file write-only
         auto f = mpl::file(comm_world, filename, mpl::file::access_mode::create|mpl::file::access_mode::write_only);
 
@@ -113,7 +118,7 @@ public:
 
 
     // Steepness derivative
-    value_type dsteepness() {
+    value_type dsteepness() override {
         // Local and global dsteepness holders
         value_type global_ds, local_ds = 0;
 
@@ -124,6 +129,8 @@ public:
         comm_world.allreduce(std::plus<>(), local_ds, global_ds);
         return global_ds;
     }
+
+
 
 private:
     // Swap halo cells between processes to keep simulation consistent between processes
@@ -152,11 +159,13 @@ private:
         }
     }
 
+
+
 public:
-    // Iterate from t to t+time_step in one step
-    value_type step(value_type time_step) {
+    // Iterate from t to t+dt in one step
+    value_type step(value_type dt) override {
         // Update h
-        for (size_t i=1; i<h.size()-1; i++) update_h_cell(i, time_step);
+        for (size_t i=1; i<h.size()-1; i++) update_h_cell(i, dt);
         exchange_halos(h);
 
         // Update g
@@ -164,13 +173,14 @@ public:
         exchange_halos(g);
 
         // Increment and return t
-        t += time_step;
+        t += dt;
         return t;
     }
 };
 
 
 
+// Initialize static MPI-related members
 mpl::communicator MountainRangeMPI::comm_world = mpl::environment::comm_world();
 const int MountainRangeMPI::comm_rank = mpl::environment::comm_world().rank();
 const int MountainRangeMPI::comm_size = mpl::environment::comm_world().size();

@@ -4,6 +4,10 @@
 
 
 
+// Run a basic mountain range simulation and print its simulation time
+
+
+
 int main() {
     // Simulation parameters
     size_t len = 1000;

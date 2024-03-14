@@ -10,8 +10,17 @@
 
 
 
+// This header containes the base MountainRange class, which can be compiled serial or OpenMP threaded
+
+
+
+// Namespace for split_range, which is used by both std::jthread and MPI implementations
 namespace mr {
     // Divide [0, n) evenly among size processes, returning the range appropriate for rank [0, size).
+    // Example: divide 100 cells among 3 threads, ignoring the first and last cells since they aren't updated:
+    //   - split_range(100, 0, 3) -> [1, 34]
+    //   - split_range(100, 1, 3) -> [34, 67]
+    //   - split_range(100, 2, 3) -> [67, 99]
     auto split_range(auto n, auto rank, auto size) {
         auto n_per_proc = (n - 2) / size;
         decltype(rank) extra = (n - 2) % size;
@@ -29,6 +38,7 @@ namespace mr {
 
 
 
+// Base MountainRange. Derived classes can override write, dsteepness, and step.
 class MountainRange {
 public:
     using size_type  = size_t;
@@ -37,32 +47,17 @@ public:
 
 
 protected:
+    // Parameters and members
     static constexpr const value_type default_dt = 0.01;
     static constexpr const size_t header_size = sizeof(size_type) * 2 + sizeof(value_type);
-
     const size_type ndims, cells;
     value_type t;
     std::vector<value_type> r, h, g;
 
 
 
-    static void handle_wrong_dimensions() {
-        throw std::logic_error("Input file is corrupt or multi-dimensional, which this implementation doesn't support");
-    }
-    static void handle_wrong_file_size() {
-        throw std::logic_error("Input file appears to be corrupt");
-    }
-    static void handle_write_failure(const char *const filename) {
-        throw std::logic_error("Failed to write to " + std::string(filename));
-    }
-    static void handle_read_failure(const char *const filename) {
-        throw std::logic_error("Failed to read from " + std::string(filename));
-    }
-
-
-
-// Accessors
 public:
+    // Accessors
     auto size()         const { return cells; }
     auto sim_time()     const { return t; }
     auto &uplift_rate() const { return r; }
@@ -70,9 +65,8 @@ public:
 
 
 
-
 protected:
-    // The constructor that all other constructors call
+    // Basic constructor
     MountainRange(auto ndims, auto cells, auto t, const auto &r, const auto &h): ndims{ndims}, cells{cells}, t{t},
                                                                                  r(r), h(h), g(h) {
         if (ndims != 1) handle_wrong_dimensions();
@@ -81,21 +75,52 @@ protected:
 
 
 
+    // Error handlers for I/O constructors
+    static void handle_wrong_dimensions() {
+        throw std::logic_error("Input file is corrupt or multi-dimensional, which this implementation doesn't support");
+    }
+
+    static void handle_wrong_file_size() {
+        throw std::logic_error("Input file appears to be corrupt");
+    }
+
+    static void handle_write_failure(const char *const filename) {
+        throw std::logic_error("Failed to write to " + std::string(filename));
+    }
+
+    static void handle_read_failure(const char *const filename) {
+        throw std::logic_error("Failed to read from " + std::string(filename));
+    }
+
+
+
+    // Read in a MountainRange from a stream
     MountainRange(std::istream &&s): ndims{try_read_bytes<decltype(ndims)>(s)},
                                      cells{try_read_bytes<decltype(cells)>(s)},
                                      t{    try_read_bytes<decltype(t    )>(s)},
                                      r(cells),
                                      h(cells),
                                      g(cells) {
+        // Handle nonsense
         if (ndims != 1) handle_wrong_dimensions();
+
+        // Read in r and h
         try_read_bytes(s, r.data(), r.size());
         try_read_bytes(s, h.data(), h.size());
+
+        // Initialize g
         step(0);
     }
 
+
+
 public:
+    // Build a MountainRange from an uplift rate and a current height
     MountainRange(const auto &r, const auto &h): MountainRange(1ul, r.size(), 0.0, r, h) {}
 
+
+
+    // Read a MountainRange from a file, handling read errors gracefully
     MountainRange(const char *filename) try: MountainRange(std::ifstream(filename)) {
                                         } catch (const std::ios_base::failure &e) {
                                             handle_read_failure(filename);
@@ -103,12 +128,22 @@ public:
                                             handle_read_failure(filename);
                                         }
 
-    virtual void write(const char *filename) {
+
+
+    // Write a MountainRange to a file, handling write errors gracefully
+    virtual void write(const char *filename) const {
+        // Open the file
         auto f = std::ofstream(filename);
+
         try {
+            // Write the header
             try_write_bytes(f, &ndims, &cells, &t);
+
+            // Write the body
             try_write_bytes(f, r.data(), r.size());
             try_write_bytes(f, h.data(), h.size());
+
+        // Handle write failures
         } catch (const std::filesystem::filesystem_error &e) {
             handle_write_failure(filename);
         } catch (const std::ios_base::failure &e) {
@@ -118,9 +153,26 @@ public:
 
 
 
+protected:
+    // Helpers for step and dsteepness
+    constexpr void update_g_cell(auto i) {
+        auto L = (h[i-1] + h[i+1]) / 2 - h[i];
+        g[i] = r[i] - pow(h[i], 3) + L;
+    }
+
+    constexpr void update_h_cell(auto i, auto dt) {
+        h[i] += g[i] * dt;
+    }
+
+    // Doesn't divide by 2*cells since we only care whether dsteepness is above zero
+    constexpr value_type ds_cell(auto i) const {
+        return (h[i-1] - h[i+1]) * (g[i-1] - g[i+1]);
+    }
 
 
 
+public:
+    // Calculate the steepness derivative
     virtual value_type dsteepness() {
         value_type ds = 0;
         #pragma omp parallel for reduction(+:ds)
@@ -130,6 +182,7 @@ public:
 
 
 
+    // Step from t to t+dt in one step
     virtual value_type step(value_type dt) {
         // Update h
         #pragma omp parallel for
@@ -150,37 +203,25 @@ public:
 
 
 
+    // Step until dsteepness() falls below 0, checkpointing along the way
     value_type solve(value_type dt=default_dt) {
         // Read checkpoint interval from environment
         value_type checkpoint_interval = 0;
         auto INTVL = std::getenv("INTVL");
         if (INTVL != nullptr) std::from_chars(INTVL, INTVL+std::strlen(INTVL), checkpoint_interval);
+
         // Solve loop
         while (dsteepness() >= 0) {
             step();
+
             // Checkpoint if requested
             if (checkpoint_interval > 0 && fmod(t+dt/5, checkpoint_interval) < 2*dt/5) {
                 auto check_file_name = std::format("chk-{:07.2f}.wo", t).c_str();
                 write(check_file_name);
             }
         }
+
+        // Return total simulation time
         return t;
-    }
-
-
-
-protected:
-    // Helpers for step and dsteepness
-    constexpr void update_g_cell(auto i) {
-        auto L = (h[i-1] + h[i+1]) / 2 - h[i];
-        g[i] = r[i] - pow(h[i], 3) + L;
-    }
-
-    constexpr void update_h_cell(auto i, auto dt) {
-        h[i] += g[i] * dt;
-    }
-
-    constexpr value_type ds_cell(auto i) const {
-        return (h[i-1] - h[i+1]) * (g[i-1] - g[i+1]);
     }
 };

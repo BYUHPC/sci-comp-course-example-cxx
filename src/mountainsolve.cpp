@@ -1,3 +1,4 @@
+#include <iostream>
 #ifdef MPI_VERSION
 #include <mpl/mpl.hpp>
 #endif
@@ -53,6 +54,8 @@ int main(int argc, char **argv) {
         print("`", argv[0], " --help` prints this message.");
     }; // https://tinyurl.com/byusc-lambda
 
+
+
     // Parse
     if (argc > 1 && (std::string(argv[1]) == std::string("-h") || std::string(argv[1]) == std::string("--help"))) {
         help();
@@ -66,17 +69,23 @@ int main(int argc, char **argv) {
     auto infile = argv[1];
     auto outfile = argv[2];
 
+
+
     // Run
     try {
         // Read from infile
         auto m = MtnRange(infile);
         print("Successfully read ", infile);
+
         // Solve
         m.solve();
         print("Solved; simulation time: ", m.sim_time());
+
         // Write to outfile
         m.write(outfile);
         print("Successfully wrote ", outfile);
+
+        // Return 0 if we made it this far
         return 0;
 
     // Handle errors

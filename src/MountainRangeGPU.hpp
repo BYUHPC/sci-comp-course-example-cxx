@@ -1,5 +1,4 @@
-#ifndef MOUNTAIN_RANGE_GPU_H
-#define MOUNTAIN_RANGE_GPU_H
+#pragma once
 #include <cstdint>
 #include <cmath>
 #include <algorithm>
@@ -10,18 +9,19 @@
 
 
 // Helper function to get iterators to first and last indices of an array
+// Use NVidia-specific code if it's available, otherwise use std::ranges
 #if __has_include(<thrust/iterator/counting_iterator.h>)
 #include <thrust/iterator/counting_iterator.h>
 namespace {
     auto index_range(const auto &x) {
-        return std::make_tuple(thrust::counting_iterator(0ul), thrust::counting_iterator(x.size()));
+        return std::make_tuple(thrust::counting_iterator(1ul), thrust::counting_iterator(x.size()-1));
     }
 };
 #else
 #include <ranges>
 namespace {
     auto index_range(const auto &x) {
-        auto interior = std::ranges::views::iota(0ul, x.size());
+        auto interior = std::ranges::views::iota(1ul, x.size()-1);
         return std::make_tuple(interior.begin(), interior.end());
     }
 };
@@ -31,15 +31,17 @@ namespace {
 
 class MountainRangeGPU: public MountainRange {
 public:
-    // Delegate constructor to MountainRange
+    // Delegate construction to MountainRange
     using MountainRange::MountainRange;
-    //MountainRangeGPU(auto && ...args): MountainRange(args...) { // https://tinyurl.com/byusc-parpack
-    //    step(0); // initialize g
-    //}
+
+
 
     // Steepness derivative
-    value_type dsteepness() {
+    value_type dsteepness() override {
+        // Get iterators to first and last cells to be reduced
         auto [first, last] = index_range(h); // https://tinyurl.com/byusc-structbind
+
+        // Sum ds_cell for each interior cell
         return std::transform_reduce(std::execution::par_unseq, first, last, value_type{0}, // initial value
                                      [](auto a, auto b){ return a + b; },                   // reduce
                                      [h=h.data(), g=g.data()](auto i){                      // transform
@@ -47,13 +49,17 @@ public:
                                      }) / cells; // https://tinyurl.com/byusc-lambda
     }
 
-    // Iterate from t to t+time_step in one step
-    value_type step(value_type time_step) {
-        // Update h
+
+
+    // Iterate from t to t+dt in one step
+    value_type step(value_type dt) override {
+        // Get iterators to first and last cells to be updated
         auto [first, last] = index_range(h); // https://tinyurl.com/byusc-structbind
+
+        // Update h
         std::for_each(std::execution::par_unseq, first, last,
-                      [h=h.data(), g=g.data(), time_step](auto i){
-                          h[i] += time_step * g[i];
+                      [h=h.data(), g=g.data(), dt](auto i){
+                          h[i] += dt * g[i];
                       }); // https://tinyurl.com/byusc-lambda
 
         // Update g
@@ -63,12 +69,8 @@ public:
                           g[i] = r[i] - pow(h[i], 3) + L;
                       }); // https://tinyurl.com/byusc-lambda
 
-        // Update simulation time
-        t += time_step;
+        // Update and return simulation time
+        t += dt;
         return t;
     }
 };
-
-
-
-#endif

@@ -6,6 +6,12 @@
 
 
 
+// This program compares two mountain ranges to determine whether they represent the same mountain range.
+// Usage: mountaindiff range1.mr range2.mr
+
+
+
+// Tolerances
 const MountainRange::value_type acceptable_time_ratio         = 1.0001,
                                 acceptable_height_error_ratio = 0.000001; // TODO: should this increase with time?
 
@@ -25,9 +31,9 @@ int main(int argc, char **argv) {
     // Parse
     const auto help_message = [&]{
         std::stringstream s;
-        s << "Usage: " << argv[0] << " expected actual" << std::endl
-          << "Compate the mountain ranges in files expected and actual, returning 0 if they seem to represent the same "
-          << "mountain range, or printing an error message and returning 1 if not.";
+        s << "Usage: " << argv[0] << " expected.mr actual.mr" << std::endl
+          << "Compare the mountain ranges in files expected.mr and actual.mr, returning 0 if they seem to represent "
+          << "the same mountain range, or printing an error message and returning 1 if not.";
         return s.str();
     }(); // https://tinyurl.com/byusc-lambdai
     if (argc > 1 && (std::string(argv[1]) == std::string("-h") || std::string(argv[1]) == std::string("--help"))) {
@@ -60,11 +66,11 @@ int main(int argc, char **argv) {
 
     // Make sure that h are about the same
     if (h1.size() == h2.size()) { // no point of comparison if lengths are different
-        auto indices = std::views::iota(0ul, h1.size());
+        auto inds = std::views::iota(0ul, h1.size());
         auto m1_height_rms = sqrt(std::transform_reduce(h1.begin(), h1.end(), decltype(m1)::value_type{}, std::plus<>(),
                                                         [](auto h){ return h * h; } // https://tinyurl.com/byusc-lambda
                                  ) / h1.size());
-        auto height_difference_rms = sqrt(std::transform_reduce(indices.begin(), indices.end(), decltype(m1)::value_type{},
+        auto height_difference_rms = sqrt(std::transform_reduce(inds.begin(), inds.end(), decltype(m1)::value_type{},
                                                                 std::plus<>(),
                                                                 [&](auto i){ return pow(h1[i] - h2[i], 2); }
                                          ) / h1.size());
