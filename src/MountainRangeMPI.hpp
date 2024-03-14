@@ -1,5 +1,4 @@
-#ifndef MOUNTAIN_RANGE_MPI_H
-#define MOUNTAIN_RANGE_MPI_H
+#pragma once
 #include <array>
 #include <mpl/mpl.hpp>
 #include "MountainRange.hpp"
@@ -34,14 +33,16 @@ namespace {
  * The MPI within the class is completely self-contained--users don't need to explicitly make any MPI calls.
  */
 class MountainRangeMPI: public MountainRange {
-    static constexpr const size_t header_size = sizeof(ndims) + sizeof(cells) + sizeof(t);
-    // Helpers
-    auto comm_world()  const { return mpl::environment::comm_world(); }
-    size_t comm_rank() const { return comm_world().rank(); }
-    size_t comm_size() const { return comm_world().size(); }
+    // MPI-related members (initialized at the bottom of this file)
+    static mpl::communicator comm_world;
+    static const int comm_rank;
+    static const int comm_size;
 
+
+
+    // Helpers
     auto this_process_cell_range() const {
-        return mr::split_range(cells, comm_rank(), comm_size());
+        return mr::split_range(cells, comm_rank, comm_size);
     }
 
 
@@ -62,7 +63,7 @@ class MountainRangeMPI: public MountainRange {
 
         // Figure out read offsets
         auto r_offset = header_size + sizeof(value_type) * first;
-        auto h_offset = r_offset + sizeof(value_type) * r.size();
+        auto h_offset = r_offset + sizeof(value_type) * cells;
 
         // Read
         auto layout = mpl::vector_layout<value_type>(r.size());
@@ -74,17 +75,17 @@ class MountainRangeMPI: public MountainRange {
     }
 
 public:
-    MountainRangeMPI(const char *filename) try: MountainRangeMPI(mpl::file(comm_world(), filename,
-                                                                                 mpl::file::access_mode::read_only)) {
-                                                 } catch (const mpl::io_failure &e) {
-                                                     handle_read_failure(filename);
-                                                 }
+    MountainRangeMPI(const char *filename) try: MountainRangeMPI(mpl::file(comm_world, filename,
+                                                                 mpl::file::access_mode::read_only)) {
+                                           } catch (const mpl::io_failure &e) {
+                                               handle_read_failure(filename);
+                                           }
 
 
 
     void write(const char *filename) const try {
         // Open file write-only
-        auto f = mpl::file(comm_world(), filename, mpl::file::access_mode::create|mpl::file::access_mode::write_only);
+        auto f = mpl::file(comm_world, filename, mpl::file::access_mode::create|mpl::file::access_mode::write_only);
 
         // Write header
         f.write_all(ndims);
@@ -93,12 +94,12 @@ public:
 
         // Figure out which part of r and h this process is in charge of writing
         auto [first, last] = this_process_cell_range(); // https://tinyurl.com/byusc-structbind
-        if (comm_rank() == 0            ) first -= 1; // First "halo" is actually the first row
-        if (comm_rank() == comm_size()-1) last  += 1; // Last "halo" is actually the last row
+        if (comm_rank == 0            ) first -= 1; // First "halo" is actually the first row
+        if (comm_rank == comm_size-1) last  += 1; // Last "halo" is actually the last row
         auto layout = mpl::vector_layout<value_type>(last-first);
         auto r_offset = header_size + sizeof(value_type) * first;
-        auto h_offset = r_offset + sizeof(value_type) * r.size();
-        auto halo_offset = comm_rank() == 0 ? 0 : 1;
+        auto h_offset = r_offset + sizeof(value_type) * cells;
+        auto halo_offset = comm_rank == 0 ? 0 : 1;
 
         // Write body
         f.write_at(r_offset, r.data()+halo_offset, layout);
@@ -120,7 +121,7 @@ public:
         for (size_t i=1; i<r.size()-1; i++) local_ds += ds_cell(i);
 
         // Sum the ds from all processes and return it
-        comm_world().allreduce(std::plus<>(), local_ds, global_ds);
+        comm_world.allreduce(std::plus<>(), local_ds, global_ds);
         return global_ds;
     }
 
@@ -141,13 +142,13 @@ private:
 
         // Exchange halos with the process to the left if there is such a process
         if (global_first > 1) {
-            comm_world().sendrecv(first_real_cell, comm_rank()-1, left_tag,   // send
-                                  first_halo,      comm_rank()-1, right_tag); // receive
+            comm_world.sendrecv(first_real_cell, comm_rank-1, left_tag,   // send
+                                first_halo,      comm_rank-1, right_tag); // receive
         }
         // Exchange halos with the process to the right if this process has a real end halo
-        if (global_last  < cells-1) {
-            comm_world().sendrecv(last_real_cell,  comm_rank()+1, right_tag,  // send
-                                  last_halo,       comm_rank()+1, left_tag);  // receive
+        if (global_last < cells-1) {
+            comm_world.sendrecv(last_real_cell,  comm_rank+1, right_tag,  // send
+                                last_halo,       comm_rank+1, left_tag);  // receive
         }
     }
 
@@ -155,11 +156,11 @@ public:
     // Iterate from t to t+time_step in one step
     value_type step(value_type time_step) {
         // Update h
-        for (size_t i=1; i<h.size(); i++) update_h_cell(i, time_step);
+        for (size_t i=1; i<h.size()-1; i++) update_h_cell(i, time_step);
         exchange_halos(h);
 
         // Update g
-        for (size_t i=1; i<g.size(); i++) update_g_cell(i);
+        for (size_t i=1; i<g.size()-1; i++) update_g_cell(i);
         exchange_halos(g);
 
         // Increment and return t
@@ -170,4 +171,6 @@ public:
 
 
 
-#endif
+mpl::communicator MountainRangeMPI::comm_world = mpl::environment::comm_world();
+const int MountainRangeMPI::comm_rank = mpl::environment::comm_world().rank();
+const int MountainRangeMPI::comm_size = mpl::environment::comm_world().size();

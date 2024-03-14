@@ -1,5 +1,4 @@
-#ifndef MOUNTAIN_RANGE_THREADED_H
-#define MOUNTAIN_RANGE_THREADED_H
+#pragma once
 #include <cstring>
 #include <charconv>
 #include <vector>
@@ -110,7 +109,3 @@ public:
         return t;
     }
 };
-
-
-
-#endif

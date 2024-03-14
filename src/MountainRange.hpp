@@ -1,3 +1,4 @@
+#pragma once
 #include <vector>
 #include <fstream>
 #include <filesystem>
@@ -10,10 +11,10 @@
 
 
 namespace mr {
-    // Divide [0, n) evenly among size processes, returning the range appropriate for rank.
+    // Divide [0, n) evenly among size processes, returning the range appropriate for rank [0, size).
     auto split_range(auto n, auto rank, auto size) {
         auto n_per_proc = (n - 2) / size;
-        auto extra      = (n - 2) % size;
+        decltype(rank) extra = (n - 2) % size;
         auto first = n_per_proc * rank + std::min(rank, extra) + 1;
         auto last = first + n_per_proc;
         if (rank < extra) {
@@ -175,11 +176,11 @@ protected:
         g[i] = r[i] - pow(h[i], 3) + L;
     }
 
-    constexpr void update_h_cell(auto i, auto time_step) {
-        h[i] += g[i] * time_step;
+    constexpr void update_h_cell(auto i, auto dt) {
+        h[i] += g[i] * dt;
     }
 
     constexpr value_type ds_cell(auto i) const {
-        return (h[i-1] - h[i+1]) * (g[i-1] - g[i+1]) / 2 / cells;
+        return (h[i-1] - h[i+1]) * (g[i-1] - g[i+1]);
     }
 };

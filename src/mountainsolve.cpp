@@ -23,13 +23,13 @@ using MtnRange = MountainRangeMPI;
 
 // Print function that will only print in the first process if MPI is being used
 namespace {
-    enum class stream { stdout, stderr };
-    template <stream S=stream::stdout>
+    enum class to { stdout, stderr };
+    template <to S=to::stdout>
     void print(auto && ...args) {
 #ifdef MPI_VERSION
         if (mpl::environment::comm_world().rank() > 0) return; // only print in the main thread
 #endif
-        if constexpr (S==stream::stdout) {
+        if constexpr (S==to::stdout) {
             (std::cout << ... << args);
             std::cout << std::endl;
         } else {
@@ -59,7 +59,7 @@ int main(int argc, char **argv) {
         return 0;
     }
     if (argc != 3) {
-        print<stream::stderr>("Exactly two arguments must be supplied.");
+        print<to::stderr>("Exactly two arguments must be supplied.");
         help();
         return 2;
     }
@@ -81,9 +81,9 @@ int main(int argc, char **argv) {
 
     // Handle errors
     } catch (const std::logic_error &e) {
-        print<stream::stderr>(e.what(), "; aborting");
+        print<to::stderr>(e.what(), "; aborting");
     } catch(const std::exception &e) {
-        print<stream::stderr>("Unrecognized error: ", e.what(), "; aborting");
+        print<to::stderr>("Unrecognized error: ", e.what(), "; aborting");
     }
     return 1;
 }
