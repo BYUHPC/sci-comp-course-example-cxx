@@ -42,7 +42,7 @@ public:
         auto [first, last] = index_range(h); // https://tinyurl.com/byusc-structbind
         return std::transform_reduce(std::execution::par_unseq, first, last, value_type{0}, // initial value
                                      [](auto a, auto b){ return a + b; },                   // reduce
-                                     [n=n, h=h.data(), g=g.data()](auto i){                 // transform
+                                     [h=h.data(), g=g.data()](auto i){                      // transform
                                          return (h[i-1] - h[i+1]) * (g[i-1] - g[i+1]) / 2;
                                      }) / cells; // https://tinyurl.com/byusc-lambda
     }
@@ -58,7 +58,7 @@ public:
 
         // Update g
         std::for_each(std::execution::par_unseq, first, last,
-                      [n=n, r=r.data(), h=h.data(), g=g.data()](auto i){
+                      [r=r.data(), h=h.data(), g=g.data()](auto i){
                           auto L = (h[i-1] + h[i+1]) / 2 - h[i];
                           g[i] = r[i] - pow(h[i], 3) + L;
                       }); // https://tinyurl.com/byusc-lambda
