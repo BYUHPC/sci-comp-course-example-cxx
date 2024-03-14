@@ -39,8 +39,8 @@ The other binaries mirror those that will be built for the C++ phases of the pro
 | Corresponding phase | Binary | Source files |
 | --- | --- | --- |
 | [Phase 1](https://byuhpc.github.io/sci-comp-course/project/phase1) | `initial` | [initial](src/initial.cpp), [MountainRange](src/MountainRange.hpp) |
-| [Phase 2](https://byuhpc.github.io/sci-comp-course/project/phase2) | `mountainsolve_serial`* | [MountainRage](src/MountainRage.hpp) |
-| [Phase 3](https://byuhpc.github.io/sci-comp-course/project/phase3) | `mountainsolve_openmp` | [MountainRage](src/MountainRage.hpp) |
+| [Phase 2](https://byuhpc.github.io/sci-comp-course/project/phase2) | `mountainsolve_serial`* | [MountainRange](src/MountainRange.hpp) |
+| [Phase 3](https://byuhpc.github.io/sci-comp-course/project/phase3) | `mountainsolve_openmp` | [MountainRange](src/MountainRange.hpp) |
 | [Phase 5](https://byuhpc.github.io/sci-comp-course/project/phase5) | `mountainsolve_thread` | [MountainRangeThreaded](src/MountainRangeThreaded.hpp) |
 | [Phase 7](https://byuhpc.github.io/sci-comp-course/project/phase7) | `mountainsolve_mpi`* | [MountainRangeMPI](src/MountainRangeMPI.hpp) |
 | [Phase 8](https://byuhpc.github.io/sci-comp-course/project/phase8) | `mountainsolve_gpu`* | [MountainRangeGPU](src/MountainRangeGPU.hpp) |
