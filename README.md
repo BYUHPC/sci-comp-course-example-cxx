@@ -1,6 +1,6 @@
 # BYU Scientific Computing Course Example C++
 
-This repository contains code that parallels what students need to create for the [BYU Scientific Computing Course's semester-long project](https://byuhpc.github.io/sci-comp-course/project/overview.html). [The problem](#the-problem-orogeny), of course, is different, but imitating this code should serve most students well. Some sacrifices to good C++ style have been made for ease of understanding by students unfamiliar with modern C++.
+This repository contains code that parallels what students need to create for the [BYU Scientific Computing Course's semester-long project](https://byuhpc.github.io/sci-comp-course/project/overview.html). [The problem](#the-problem-orogeny), of course, is different, but imitating this code should serve most students well. Some sacrifices to good style have been made for ease of understanding by students unfamiliar with modern C++.
 
 
 
@@ -18,10 +18,10 @@ Alternately, you can initialize and update submodules after cloning:
 git submodule update --init
 ```
 
-To build and test, set `srcdir` to the directory containing `CMakeLists.txt`, navigate to a clean build directory, and run:
+To build and test, set `SRCDIR` to the directory containing `CMakeLists.txt`, navigate to a clean build directory, and run:
 
 ```bash
-cmake "$srcdir"
+cmake "$SRCDIR"
 cmake --build . --parallel
 ctest
 ```
@@ -38,16 +38,16 @@ The other binaries mirror those that will be built for the C++ phases of the pro
 
 | Corresponding phase | Binary | Source files |
 | --- | --- | --- |
-| [Phase 1](https://byuhpc.github.io/sci-comp-course/project/phase1) | `initial` | [initial](src/initial.cpp), [MountainRangeOpenMP](src/MountainRangeOpenMP.hpp) |
-| [Phase 2](https://byuhpc.github.io/sci-comp-course/project/phase2) | `mountainsolve_serial`* | [MountainRangeOpenMP](src/MountainRangeOpenMP.hpp) |
-| [Phase 3](https://byuhpc.github.io/sci-comp-course/project/phase3) | `mountainsolve_openmp` | [MountainRangeOpenMP](src/MountainRangeOpenMP.hpp) |
+| [Phase 1](https://byuhpc.github.io/sci-comp-course/project/phase1) | `initial` | [initial](src/initial.cpp), [MountainRange](src/MountainRange.hpp) |
+| [Phase 2](https://byuhpc.github.io/sci-comp-course/project/phase2) | `mountainsolve_serial`* | [MountainRage](src/MountainRage.hpp) |
+| [Phase 3](https://byuhpc.github.io/sci-comp-course/project/phase3) | `mountainsolve_openmp` | [MountainRage](src/MountainRage.hpp) |
 | [Phase 5](https://byuhpc.github.io/sci-comp-course/project/phase5) | `mountainsolve_thread` | [MountainRangeThreaded](src/MountainRangeThreaded.hpp) |
 | [Phase 7](https://byuhpc.github.io/sci-comp-course/project/phase7) | `mountainsolve_mpi`* | [MountainRangeMPI](src/MountainRangeMPI.hpp) |
 | [Phase 8](https://byuhpc.github.io/sci-comp-course/project/phase8) | `mountainsolve_gpu`* | [MountainRangeGPU](src/MountainRangeGPU.hpp) |
 
-In addition to the source files listed above, each binary uses the base class [MountainRange](src/MountainRange.hpp), and each `mountainsolve_*` uses [binary_io](simple-cxx-binary-io/binary_io.hpp) and [mountainsolve](src/run_solver.hpp).
+In addition to the source files listed above, each binary uses the base class [MountainRange](src/MountainRange.hpp), and each `mountainsolve_*` uses [binary_io](simple-cxx-binary-io/binary_io.hpp) and [mountainsolve](src/mountainsolve.hpp).
 
-\* `mountainsolve_serial` uses identical code to `mountainsolve_openmp`, but is compiled without OpenMP--part of the beauty of OpenMP. `mountainsolve_mpi` is only built if an MPI compiler is found. `mountainsolve_gpu` is only built if the compiler is [Nvidia's HPC SDK](https://developer.nvidia.com/hpc-sdk).
+\* `mountainsolve_serial` uses identical code to `mountainsolve_openmp`, but is compiled without OpenMP--part of the beauty of OpenMP. `mountainsolve_mpi` is only built if an MPI compiler is found. `mountainsolve_gpu` is only built if the compiler is [Nvidia's HPC SDK](https://developer.nvidia.com/hpc-sdk). On [our supercomputer], you can get an MPI compiler with `module load gcc/latest openmpi mpl`, and Nvidia's HPC SDK with `module load nvhpc`.
 
 Each generated `mountainsolve_*` has a help message explaining its usage; use `<binary-name> --help` to print it.
 
@@ -57,7 +57,7 @@ Each generated `mountainsolve_*` has a help message explaining its usage; use `<
 
 ## The Problem: Orogeny
 
-This example code simulates a crude approximation of [mountain building](https://en.wikipedia.org/wiki/Orogeny) with a [Neumann boundary condition](https://en.wikipedia.org/wiki/Neumann_boundary_condition) in one dimension:
+This example code simulates a crude approximation of [mountain building](https://en.wikipedia.org/wiki/Orogeny) with a [Dirichlet boundary condition](https://en.wikipedia.org/wiki/Dirichlet_boundary_condition) in one dimension:
 
 ![Evolution of Simulated Mountain Range, with Steepness and its Derivative Shown](img/example-code-animation-1D.gif)
 
@@ -76,23 +76,19 @@ This state will hence be referred to as a **mountain range**.
 
 To **step** the `i`th cell of a mountain range from time `t` to time `t+dt` the following algorithm is used:
 
-$$L_i^{(t)} = \frac{h_{left}^{(t)} + h_{right}^{(t)}}{2} - h_i^{(t)}$$
+$$L_i^{(t)} = \frac{h_{i-1}^{(t)} + h_{i+1}^{(t)}}{2} - h_i^{(t)}$$
 
 $$g_i^{(t+dt)} = r_i - \left(h_i^{(t)}\right)^3 + L_i^{(t)}$$
 
 $$h_i^{(t+dt)} = h_i^{(t)} + dt \space g_i^{(t+dt)}$$
-
-...where $left$ and $right$ are normally $i-1$ and $i+1$ respectively, but are $i$ at the edge of the array where $i-1$ or $i+1$ would exceed the array's bounds; this fulfills the zero-derivative boundary condition of the simulation.
 
 Here's how one step of `dt` for the whole mountain range might look in Julia:
 
 ```julia
 function step!(h, g, r, dt)
     # Update g
-    for i in eachindex(r, h, g)
-        left  = min(i-1, firstindex(r, 1))
-        right = max(i+1,  lastindex(r, 1))
-        L = (h[left]+h[right])/2 - h[i]
+    for i in firstindex(h)+1:lastindex(h)-1
+        L = (h[i-1]+h[i+1])/2 - h[i]
         g[i] = r[i]-h[i]^3+L
     end
     # Update h
@@ -108,9 +104,9 @@ end
 
 We discretize the derivative of the mountain range's ["steepness"](#steepness-and-its-derivative) at cell $i$ as:
 
-$$\dot{s}\_i = \frac{\left( h_{right} - h_{left} \right)\left( g_{right} - g_{left} \right)}{2 n}$$
+$$\dot{s}\_i = \frac{\left( h_{i+1} - h_{i-1} \right)\left( g_{i+1} - g_{i-1} \right)}{2 n}$$
 
-...where $left$ and $right$ are defined as [above](#advancing-the-simulation), and $n$ is the number of cells in the `h` and `g` arrays.
+...where $n$ is the number of cells in the `h` and `g` arrays.
 
 The simulation stops when the sum of the steepness derivative over the whole mountain range falls below zero--i.e. when the range is at its "steepest."
 
@@ -119,10 +115,8 @@ The **steepness derivative** of a mountain range could be calculated in Julia th
 ```julia
 function dsteepness(h, g)
     ds = 0
-    for i in eachindex(h, g)
-        left  = max(i-1, firstindex(h))
-        right = min(i+1,  lastindex(h))
-        ds += (h[right]-h[left]) * (g[right]-g[left]) / 2
+    for i in firstindex(h)+1:lastindex(h)-1
+        ds += (h[i+1]-h[i-1]) * (g[i+1]-g[i-1]) / 2
     end
     return ds/length(h)
 end
@@ -174,7 +168,7 @@ Mountain range data files contain binary data sufficient to represent the [state
 
 The data is tightly packed--there are no gaps between elements.
 
-See the `write` function in [`src/MountainRangeSharedMem.hpp`](src/MountainRangeSharedMem.hpp) for an example of how to write in binary.
+See the `write` function in [`src/MountainRange.hpp`](src/MountainRange.hpp) for an example of how to write in binary.
 
 
 
@@ -192,7 +186,7 @@ Again like the project problem, this can be generalized to an arbitrary number o
 
 ### Boundary Condition
 
-The derivative at the edges is simulated as zero by treating the cells just beyond the edge of the array as being of identical value to the corresponding edge cells.
+The value at the edges is simulated as zero by not updating the first and last cells of any array.
 
 ### Steepness and its Derivative
 
