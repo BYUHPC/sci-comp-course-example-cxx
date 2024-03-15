@@ -1,0 +1,14 @@
+name = "Mountains"
+uuid = "5628f586-0f87-4006-9d99-cbb1d1d1a4b9"
+authors = ["micgre93 <michaeljgreenburg@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+DifferentialEquations = "0c46a032-eb83-5123-abaf-570d42b7fbaa"
+Preferences = "21216c6a-2e73-6563-6e65-726566657250"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
