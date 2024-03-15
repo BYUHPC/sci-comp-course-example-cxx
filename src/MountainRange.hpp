@@ -188,6 +188,8 @@ public:
         // Update g
         #pragma omp parallel for
         for (size_t i=1; i<g.size()-1; i++) update_g_cell(i);
+
+        // Enforce boundary condition
         g[0] = g[1];
         g[cells-1] = g[cells-2];
 

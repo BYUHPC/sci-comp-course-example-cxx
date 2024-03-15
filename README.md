@@ -129,7 +129,7 @@ end
 
 ## Running the Simulation
 
-The purpose of this code is to, given an initial state, update that state until the steepness derivative drops below zero (i.e. **solve** the state). Given initial state given by uplift rate `r`, time step `dt`, simulation time `t0`, height `h0`, and growth rate `g0`, and the functions [`step!`](#advancing-the-simulation) and [`dsteepness`](#stopping-criterion-steepness-derivative) defined above, here is a Julia function that would solve the state:
+The purpose of this code is to, given an initial state, update that state until the steepness derivative drops below the machine eps of a 64-bit float (i.e. **solve** the state). Given initial state given by uplift rate `r`, time step `dt`, simulation time `t0`, height `h0`, and growth rate `g0`, and the functions [`step!`](#advancing-the-simulation) and [`dsteepness`](#stopping-criterion-steepness-derivative) defined above, here is a Julia function that would solve the state:
 
 ```julia
 function solve(t0, h0, g0, r, dt)
@@ -137,7 +137,7 @@ function solve(t0, h0, g0, r, dt)
     t = t0
     h, g = deepcopy.(h0, g0)
     # Solve
-    while dsteepness(h, g) >= 0
+    while dsteepness(h, g) > eps(Float64)
         step!(h, g, r, dt)
         t += dt
     end
@@ -203,7 +203,7 @@ The [derivative of the steepness with respect to time](#time-derivative-of-eucli
 
 $$\dot s = \frac{2}{X} \int_M \nabla h \cdot \nabla \dot h \space dx$$
 
-The simulation stops when $\dot s$ drops below zero--i.e. when the mountain range is at its "steepest."
+The simulation stops when $\dot s$ drops below `eps(Float64)`--i.e. when the mountain range is at its "steepest."
 
 ### Gradient
 
