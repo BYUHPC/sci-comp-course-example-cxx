@@ -164,6 +164,8 @@ private:
 public:
     // Iterate from t to t+dt in one step
     value_type step(value_type dt) override {
+        auto [global_first, global_last] = this_process_cell_range(); // https://tinyurl.com/byusc-structbind
+
         // Update h
         for (size_t i=1; i<h.size()-1; i++) update_h_cell(i, dt);
         exchange_halos(h);
@@ -171,6 +173,10 @@ public:
         // Update g
         for (size_t i=1; i<g.size()-1; i++) update_g_cell(i);
         exchange_halos(g);
+
+        // Enforce boundary condition
+        if (global_first == 1)      g[0]          = g[1];
+        if (global_last == cells-1) g[g.size()-1] = g[g.size()-2];
 
         // Increment and return t
         t += dt;

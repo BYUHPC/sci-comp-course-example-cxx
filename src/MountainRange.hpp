@@ -6,6 +6,7 @@
 #include <format>
 #include <cstring>
 #include <cmath>
+#include <limits>
 #include "binary_io.hpp"
 
 
@@ -18,19 +19,16 @@
 namespace mr {
     // Divide [0, n) evenly among size processes, returning the range appropriate for rank [0, size).
     // Example: divide 100 cells among 3 threads, ignoring the first and last cells since they aren't updated:
-    //   - split_range(100, 0, 3) -> [1, 34]
+    //   - split_range(100, 0, 3) -> [0, 34]
     //   - split_range(100, 1, 3) -> [34, 67]
-    //   - split_range(100, 2, 3) -> [67, 99]
+    //   - split_range(100, 2, 3) -> [67, 100]
     auto split_range(auto n, auto rank, auto size) {
-        auto n_per_proc = (n - 2) / size;
-        decltype(rank) extra = (n - 2) % size;
-        auto first = n_per_proc * rank + std::min(rank, extra) + 1;
+        auto n_per_proc = n / size;
+        decltype(rank) extra = n % size;
+        auto first = n_per_proc * rank + std::min(rank, extra);
         auto last = first + n_per_proc;
         if (rank < extra) {
             last += 1;
-        }
-        if (rank == size - 1) {
-            last = n - 1;
         }
         return std::array{first, last};
     }
@@ -164,9 +162,8 @@ protected:
         h[i] += g[i] * dt;
     }
 
-    // Doesn't divide by 2*cells since we only care whether dsteepness is above zero
     constexpr value_type ds_cell(auto i) const {
-        return (h[i-1] - h[i+1]) * (g[i-1] - g[i+1]);
+        return ((h[i-1] - h[i+1]) * (g[i-1] - g[i+1])) / 2 / (cells - 2);
     }
 
 
@@ -176,7 +173,7 @@ public:
     virtual value_type dsteepness() {
         value_type ds = 0;
         #pragma omp parallel for reduction(+:ds)
-        for (size_t i=0; i<h.size(); i++) ds += ds_cell(i);
+        for (size_t i=1; i<h.size()-1; i++) ds += ds_cell(i);
         return ds;
     }
 
@@ -190,7 +187,9 @@ public:
 
         // Update g
         #pragma omp parallel for
-        for (size_t i=0; i<g.size(); i++) update_g_cell(i);
+        for (size_t i=1; i<g.size()-1; i++) update_g_cell(i);
+        g[0] = g[1];
+        g[cells-1] = g[cells-2];
 
         // Increment time step
         t += dt;
@@ -211,7 +210,7 @@ public:
         if (INTVL != nullptr) std::from_chars(INTVL, INTVL+std::strlen(INTVL), checkpoint_interval);
 
         // Solve loop
-        while (dsteepness() >= 0) {
+        while (dsteepness() > std::numeric_limits<value_type>::epsilon()) {
             step();
 
             // Checkpoint if requested

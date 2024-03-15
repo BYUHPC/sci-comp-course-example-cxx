@@ -68,8 +68,10 @@ public:
                 ds_barrier.arrive_and_wait();
                 if (!continue_iteration) return false;
                 auto [first, last] = this_thread_cell_range(tid);
+                auto gfirst = tid==0 ? 1 : first;
+                auto glast  = tid==nthreads-1 ? last-1 : last;
                 value_type ds_local = 0;
-                for (size_t i=first; i<last; i++) ds_local += ds_cell(i);
+                for (size_t i=gfirst; i<glast; i++) ds_local += ds_cell(i);
                 ds_aggregator += ds_local;
                 ds_barrier.arrive_and_wait();
                 return true;
@@ -78,14 +80,20 @@ public:
                 step_barrier.arrive_and_wait();
                 if (!continue_iteration) return false;
                 auto [first, last] = this_thread_cell_range(tid);
+                auto gfirst = tid==0 ? 1 : first;
+                auto glast  = tid==nthreads-1 ? last-1 : last;
                 for (size_t i=first; i<last; i++) update_h_cell(i, iter_dt);
                 step_barrier.arrive_and_wait(); // h has to be completely updated before g update can start
-                for (size_t i=first; i<last; i++) update_g_cell(i);
+                for (size_t i=gfirst; i<glast; i++) update_g_cell(i);
                 step_barrier.arrive_and_wait();
                 return true;
             })) {
         // Initialize g
         step(0);
+        for (auto t=0; t<nthreads; t++) {
+            auto [first, last] = this_thread_cell_range(t);
+            std::cout << "Thread " << t << " in charge of " << first << "-" << last << std::endl;
+        }
     }
 
 
@@ -121,11 +129,15 @@ public:
         // Signal workers to update h
         step_barrier.arrive_and_wait();
 
-        // Signal workers to updating g
+        // Signal workers to update g
         step_barrier.arrive_and_wait();
 
         // Wait for workers to finish this iteration
         step_barrier.arrive_and_wait();
+
+        // Enforce boundary condition
+        g[0] = g[1];
+        g[cells-1] = g[cells-2];
 
         // Increment and return dt
         t += dt;

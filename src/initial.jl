@@ -29,6 +29,10 @@ function dhdt(h, r, t)
         g[i] = r[i] - h[i]^3 + L
     end
 
+    # Enforce bounday condition
+    g[begin] = g[begin+1]
+    g[end]   = g[end-1]
+
     # Return g
     return g
 end
@@ -43,7 +47,7 @@ function dsteepness(h, r)
     # Calculate ds
     return sum(function(i)
         return (h[i+1] - h[i-1]) * (g[i+1] - g[i-1]) / 2
-    end, firstindex(h)+1:lastindex(h)-1)/length(h)
+    end, firstindex(h)+1:lastindex(h)-1)/(length(h)-2)
 end
 
 
@@ -75,6 +79,7 @@ function main()
     r = zeros(n)
     r[plateau] .= 1
     h = zeros(n)
+    h[begin] = 1
     t = 0.0
 
     # Set up and solve the mountain range, printing the simulation time

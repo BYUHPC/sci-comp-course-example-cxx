@@ -14,14 +14,14 @@
 #include <thrust/iterator/counting_iterator.h>
 namespace {
     auto index_range(const auto &x) {
-        return std::make_tuple(thrust::counting_iterator(1ul), thrust::counting_iterator(x.size()-1));
+        return std::make_tuple(thrust::counting_iterator(0ul), thrust::counting_iterator(x.size()));
     }
 };
 #else
 #include <ranges>
 namespace {
     auto index_range(const auto &x) {
-        auto interior = std::ranges::views::iota(1ul, x.size()-1);
+        auto interior = std::ranges::views::iota(0ul, x.size());
         return std::make_tuple(interior.begin(), interior.end());
     }
 };
@@ -42,9 +42,9 @@ public:
         auto [first, last] = index_range(h); // https://tinyurl.com/byusc-structbind
 
         // Sum ds_cell for each interior cell
-        return std::transform_reduce(std::execution::par_unseq, first, last, value_type{0}, // initial value
-                                     [](auto a, auto b){ return a + b; },                   // reduce
-                                     [h=h.data(), g=g.data()](auto i){                      // transform
+        return std::transform_reduce(std::execution::par_unseq, first+1, last-1, value_type{0}, // initial value
+                                     [](auto a, auto b){ return a + b; },                       // reduce
+                                     [h=h.data(), g=g.data()](auto i){                          // transform
                                          return (h[i-1] - h[i+1]) * (g[i-1] - g[i+1]) / 2;
                                      }) / cells; // https://tinyurl.com/byusc-lambda
     }
@@ -57,15 +57,25 @@ public:
         auto [first, last] = index_range(h); // https://tinyurl.com/byusc-structbind
 
         // Update h
-        std::for_each(std::execution::par_unseq, first, last,
+        std::for_each(std::execution::par_unseq, first+1, last-1,
                       [h=h.data(), g=g.data(), dt](auto i){
                           h[i] += dt * g[i];
                       }); // https://tinyurl.com/byusc-lambda
 
         // Update g
         std::for_each(std::execution::par_unseq, first, last,
-                      [r=r.data(), h=h.data(), g=g.data()](auto i){
-                          auto L = (h[i-1] + h[i+1]) / 2 - h[i];
+                      [n=cells, r=r.data(), h=h.data(), g=g.data()](auto i){
+                          auto left  = i-1;
+                          auto right = i+1;
+                          if (i==0) {
+                              left  = i;
+                              right = i + 2;
+                          }
+                          if (i==n-1) {
+                              left = i - 2;
+                              right = i;
+                          } 
+                          auto L = (h[left] + h[right]) / 2 - h[i];
                           g[i] = r[i] - pow(h[i], 3) + L;
                       }); // https://tinyurl.com/byusc-lambda
 

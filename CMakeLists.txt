@@ -86,8 +86,8 @@ if(BUILD_TESTING)
     # Helpers
     set(TEST_SOLVER "${CMAKE_SOURCE_DIR}/test/test_solver.sh")
     set(MTN_DIFF "${CMAKE_CURRENT_BINARY_DIR}/mountaindiff")
-    set(TESTING_INFILE "${CMAKE_SOURCE_DIR}/samples/tiny-1D-in.mr" CACHE STRING "input mountain range file for tests")
-    set(TESTING_OUTFILE "${CMAKE_SOURCE_DIR}/samples/tiny-1D-out.mr" CACHE STRING "expected output file for tests")
+    set(TESTING_INFILE "${CMAKE_SOURCE_DIR}/samples/1d-tiny-in.mr" CACHE STRING "input mountain range file for tests")
+    set(TESTING_OUTFILE "${CMAKE_SOURCE_DIR}/samples/1d-tiny-out.mr" CACHE STRING "expected output file for tests")
     function(test_solver SOLVER_NAME TEST_NAME)
         add_test(NAME "${TEST_NAME}"
                  COMMAND bash "${TEST_SOLVER}" "${MTN_DIFF}" "${CMAKE_CURRENT_BINARY_DIR}/${SOLVER_NAME}"
@@ -101,12 +101,12 @@ if(BUILD_TESTING)
              COMMAND "${MTN_DIFF}" "${TESTING_INFILE}" "${TESTING_OUTFILE}")
     set_property(TEST "mountaindiff rejects plates with different times" PROPERTY WILL_FAIL TRUE)
     add_test(NAME "mountaindiff rejects plates with different sizes"
-             COMMAND "${MTN_DIFF}" "${TESTING_INFILE}" "${CMAKE_SOURCE_DIR}/samples/small-1D-in.mr")
+             COMMAND "${MTN_DIFF}" "${TESTING_INFILE}" "${CMAKE_SOURCE_DIR}/samples/1d-small-in.mr")
     set_property(TEST "mountaindiff rejects plates with different sizes" PROPERTY WILL_FAIL TRUE)
 
     # initial
     add_test(NAME "initial works" COMMAND initial)
-    set_tests_properties("initial works" PROPERTIES PASS_REGULAR_EXPRESSION "1.69")
+    set_tests_properties("initial works" PROPERTIES PASS_REGULAR_EXPRESSION "1.9")
 
     # mountainsolve_serial
     test_solver(mountainsolve_serial "mountainsolve_serial works")

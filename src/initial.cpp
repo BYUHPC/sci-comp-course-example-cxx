@@ -17,6 +17,7 @@ int main() {
     // Construct mountain range
     std::vector<decltype(value)> r(len), h(len);
     std::fill(r.begin()+plateau_start, r.begin()+plateau_end, value);
+    h[0] = 1;
     auto m = MountainRange(r, h);
 
     // Solve and return
