@@ -46,7 +46,7 @@ public:
                                      [](auto a, auto b){ return a + b; },                       // reduce
                                      [h=h.data(), g=g.data()](auto i){                          // transform
                                          return (h[i-1] - h[i+1]) * (g[i-1] - g[i+1]) / 2;
-                                     }) / cells; // https://tinyurl.com/byusc-lambda
+                                     }) / (cells - 2); // https://tinyurl.com/byusc-lambda
     }
 
 
@@ -57,7 +57,7 @@ public:
         auto [first, last] = index_range(h); // https://tinyurl.com/byusc-structbind
 
         // Update h
-        std::for_each(std::execution::par_unseq, first+1, last-1,
+        std::for_each(std::execution::par_unseq, first, last,
                       [h=h.data(), g=g.data(), dt](auto i){
                           h[i] += dt * g[i];
                       }); // https://tinyurl.com/byusc-lambda
@@ -65,18 +65,11 @@ public:
         // Update g
         std::for_each(std::execution::par_unseq, first, last,
                       [n=cells, r=r.data(), h=h.data(), g=g.data()](auto i){
-                          auto left  = i-1;
-                          auto right = i+1;
-                          if (i==0) {
-                              left  = i;
-                              right = i + 2;
-                          }
-                          if (i==n-1) {
-                              left = i - 2;
-                              right = i;
-                          } 
-                          auto L = (h[left] + h[right]) / 2 - h[i];
-                          g[i] = r[i] - pow(h[i], 3) + L;
+                          auto &gcell = g[i];
+                          if (i==0)   i+=1;
+                          if (i==n-1) i-=1;
+                          auto L = (h[i-1] + h[i+1]) / 2 - h[i];
+                          gcell = r[i] - pow(h[i], 3) + L;
                       }); // https://tinyurl.com/byusc-lambda
 
         // Update and return simulation time
