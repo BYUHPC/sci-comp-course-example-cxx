@@ -51,13 +51,13 @@ In addition to the source files listed above, each binary uses the base class [M
 
 Each generated `mountainsolve_*` has a help message explaining its usage; use `<binary-name> --help` to print it.
 
-[`initial.jl`](src/initial.jl) contains example code for [phase 9](https://byuhpc.github.io/sci-comp-course/project/phase9); it can be run with `julia src/initial.jl` and runs on the same mountain range as [`initial.cpp`](src/initial.cpp).
+[`initial.jl`](src/initial.jl) contains example code for [phase 9](https://byuhpc.github.io/sci-comp-course/project/phase9); it can be run with `julia src/initial.jl` and runs on the same mountain range as [`initial.cpp`](src/initial.cpp). [`Mountains.jl`](Mountains.jl) is a Julia package with similar functionality to the C++ code.
 
 
 
 ## The Problem: Orogeny
 
-This example code simulates a crude approximation of [mountain building](https://en.wikipedia.org/wiki/Orogeny) with a [Dirichlet boundary condition](https://en.wikipedia.org/wiki/Dirichlet_boundary_condition) in one dimension:
+This example code simulates a crude approximation of [mountain building](https://en.wikipedia.org/wiki/Orogeny) with a [Neumann boundary condition](https://en.wikipedia.org/wiki/Neumann_boundary_condition) in one dimension:
 
 ![Evolution of Simulated Mountain Range, with Steepness and its Derivative Shown](img/example-code-animation-1D.gif)
 
@@ -91,6 +91,9 @@ function step!(h, g, r, dt)
         L = (h[i-1]+h[i+1])/2 - h[i]
         g[i] = r[i]-h[i]^3+L
     end
+    # Enforce boundary condition
+    g[begin] = g[begin+1]
+    g[end]   = g[end-1]
     # Update h
     for i in eachindex(r, h, g)
         h[i] += dt*g[i]
@@ -186,7 +189,7 @@ Again like the project problem, this can be generalized to an arbitrary number o
 
 ### Boundary Condition
 
-The value at the edges is simulated as zero by not updating the first and last cells of any array.
+The derivative of `h` at the edges is simulated as zero by setting the first and last cells of `g` to the value of their immediate neighbors after updating `g`'s interior.
 
 ### Steepness and its Derivative
 

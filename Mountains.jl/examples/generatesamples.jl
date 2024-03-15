@@ -2,7 +2,7 @@
 
 
 
-using Mountains
+using Mountains, Plots
 
 
 
@@ -25,6 +25,35 @@ for (msize, r, h) in (("tiny",  chirp(0, 15, 1, 100), range(-0.1, 0.1, length=10
                                 0.01*chirp(0, 100, 1, 10000)))
     m = MountainRange(r, h)
     write("1d-$msize-in.mr", m)
-    solve!(m)
+    H = [deepcopy(m.h)]
+    S = [steepness(m)]
+    DS = [dsteepness(m)]
+    while dsteepness(m) > eps(Float64)
+        step!(m)
+        if steepness(m)-S[end]>2e-4
+            push!(H, deepcopy(m.h))
+            push!(S, steepness(m))
+            push!(DS, dsteepness(m))
+        end
+    end
     write("1d-$msize-out.mr", m)
+
+    # Normalize tracked values
+    RN = r ./ max(abs.(m.r)...)
+    Hmax = max((max(abs.(x)...) for x in H)...)
+    HN = [x ./ Hmax for x in H]
+    SN = S ./ max(abs.(S)...)
+    DSN = DS ./ max(abs.(DS)...)
+
+    # Animate the simulation's progression over time
+    @gif for i in eachindex(HN)
+        plot(begin
+                 plot(HN[i], ylim=(-1, 1), grid=false, axis=false, ticks=1:0, color=:blue, legendposition=:right, label="height")
+                 plot!(RN, color=:red, label="rate")
+             end,
+             begin
+                 plot(SN[begin:i], xlim=(1, length(SN)), ylim=(0, 1), grid=false, axis=false, ticks=1:0, color=:green, legendposition=:right, label="steepness")
+                 plot!(DSN[begin:i], color=:magenta, label="derivative")
+             end, layout=(2, 1))
+    end every Int(round(length(HN)/50))
 end
