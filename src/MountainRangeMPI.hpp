@@ -54,8 +54,8 @@ class MountainRangeMPI: public MountainRange {
                                                    3, 3) { // initialize r and h to minimum size; they're resized below
         // Figure out which cells this process is in charge of
         auto [first, last] = this_process_cell_range();
-        if (first > 0)       first -= 1; // include left halo
-        if (last  < cells-1) last  += 1; // include right halo
+        if (first > 0)     first -= 1; // include left halo
+        if (last  < cells) last  += 1; // include right halo
 
         // Resize the vectors
         r.resize(last-first);
@@ -146,12 +146,12 @@ private:
         auto [global_first, global_last] = this_process_cell_range(); // https://tinyurl.com/byusc-structbind
 
         // Exchange halos with the process to the left if there is such a process
-        if (global_first > 1) {
+        if (global_first > 0) {
             comm_world.sendrecv(first_real_cell, comm_rank-1, left_tag,   // send
                                 first_halo,      comm_rank-1, right_tag); // receive
         }
         // Exchange halos with the process to the right if this process has a real end halo
-        if (global_last < cells-1) {
+        if (global_last < cells) {
             comm_world.sendrecv(last_real_cell,  comm_rank+1, right_tag,  // send
                                 last_halo,       comm_rank+1, left_tag);  // receive
         }
@@ -165,18 +165,15 @@ public:
         auto [global_first, global_last] = this_process_cell_range(); // https://tinyurl.com/byusc-structbind
 
         // Update h
-        auto hfirst = global_first==0 ? 0 : 1;
-        auto hlast  = global_last==cells-1 ? h.size() : h.size()-1;
-        for (size_t i=hfirst; i<hlast; i++) update_h_cell(i, dt);
-        exchange_halos(h);
+        for (size_t i=0; i<h.size(); i++) update_h_cell(i, dt);
 
         // Update g
         for (size_t i=1; i<g.size()-1; i++) update_g_cell(i);
         exchange_halos(g);
 
         // Enforce boundary condition
-        if (global_first == 1)      g[0]          = g[1];
-        if (global_last == cells-1) g[g.size()-1] = g[g.size()-2];
+        if (global_first == 0)    g[0]          = g[1];
+        if (global_last == cells) g[g.size()-1] = g[g.size()-2];
 
         // Increment and return t
         t += dt;
