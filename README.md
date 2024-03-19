@@ -78,14 +78,18 @@ To **step** the `i`th cell of a mountain range from time `t` to time `t+dt` the 
 
 $$L_i^{(t)} = \frac{h_{i-1}^{(t)} + h_{i+1}^{(t)}}{2} - h_i^{(t)}$$
 
-$$g_i^{(t+dt)} = r_i - \left(h_i^{(t)}\right)^3 + L_i^{(t)}$$
+$$h_i^{(t+dt)} = h_i^{(t)} + dt \space g_i^{(t)}$$
 
-$$h_i^{(t+dt)} = h_i^{(t)} + dt \space g_i^{(t+dt)}$$
+$$g_i^{(t+dt)} = r_i - \left(h_i^{(t+dt)}\right)^3 + L_i^{(t)}$$
 
 Here's how one step of `dt` for the whole mountain range might look in Julia:
 
 ```julia
 function step!(h, g, r, dt)
+    # Update h
+    for i in eachindex(r, h, g)
+        h[i] += dt*g[i]
+    end
     # Update g
     for i in firstindex(h)+1:lastindex(h)-1
         L = (h[i-1]+h[i+1])/2 - h[i]
@@ -94,10 +98,6 @@ function step!(h, g, r, dt)
     # Enforce boundary condition
     g[begin] = g[begin+1]
     g[end]   = g[end-1]
-    # Update h
-    for i in eachindex(r, h, g)
-        h[i] += dt*g[i]
-    end
 end
 ```
 
@@ -107,7 +107,7 @@ end
 
 We discretize the derivative of the mountain range's ["steepness"](#steepness-and-its-derivative) at cell $i$ as:
 
-$$\dot{s}\_i = \frac{\left( h_{i+1} - h_{i-1} \right)\left( g_{i+1} - g_{i-1} \right)}{2 n}$$
+$$\dot{s}_i = \frac{\left( h_{i+1} - h_{i-1} \right)\left( g_{i+1} - g_{i-1} \right)}{2 n}$$
 
 ...where $n$ is the number of interior cells in the `h` and `g` arrays.
 
