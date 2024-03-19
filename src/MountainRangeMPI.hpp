@@ -51,11 +51,11 @@ class MountainRangeMPI: public MountainRange {
     MountainRangeMPI(mpl::file &&f): MountainRange(read_at_all<decltype(ndims)>(f, 0),
                                                    read_at_all<decltype(cells)>(f, sizeof(ndims)),
                                                    read_at_all<decltype(t)>(    f, sizeof(ndims)+sizeof(cells)),
-                                                   0, 0) { // initialize r and h to zero size; they're resized below
+                                                   3, 3) { // initialize r and h to minimum size; they're resized below
         // Figure out which cells this process is in charge of
         auto [first, last] = this_process_cell_range();
-        first -= 1; // include left halo
-        last  += 1; // include right halo
+        if (first > 0)       first -= 1; // include left halo
+        if (last  < cells-1) last  += 1; // include right halo
 
         // Resize the vectors
         r.resize(last-first);
@@ -99,8 +99,6 @@ public:
 
         // Figure out which part of r and h this process is in charge of writing
         auto [first, last] = this_process_cell_range(); // https://tinyurl.com/byusc-structbind
-        if (comm_rank == 0            ) first -= 1; // First "halo" is actually the first row
-        if (comm_rank == comm_size-1) last  += 1; // Last "halo" is actually the last row
         auto layout = mpl::vector_layout<value_type>(last-first);
         auto r_offset = header_size + sizeof(value_type) * first;
         auto h_offset = r_offset + sizeof(value_type) * cells;
@@ -167,7 +165,9 @@ public:
         auto [global_first, global_last] = this_process_cell_range(); // https://tinyurl.com/byusc-structbind
 
         // Update h
-        for (size_t i=1; i<h.size()-1; i++) update_h_cell(i, dt);
+        auto hfirst = global_first==0 ? 0 : 1;
+        auto hlast  = global_last==cells-1 ? h.size() : h.size()-1;
+        for (size_t i=hfirst; i<hlast; i++) update_h_cell(i, dt);
         exchange_halos(h);
 
         // Update g

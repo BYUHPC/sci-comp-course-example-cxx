@@ -191,15 +191,11 @@ public:
 
         // Enforce boundary condition
         g[0] = g[1];
-        g[cells-1] = g[cells-2];
+        g[g.size()-1] = g[g.size()-2];
 
         // Increment time step
         t += dt;
         return t;
-    }
-
-    auto step() {
-        return step(default_dt);
     }
 
 
@@ -213,7 +209,7 @@ public:
 
         // Solve loop
         while (dsteepness() > std::numeric_limits<value_type>::epsilon()) {
-            step();
+            step(dt);
 
             // Checkpoint if requested
             if (checkpoint_interval > 0 && fmod(t+dt/5, checkpoint_interval) < 2*dt/5) {

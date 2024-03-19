@@ -109,7 +109,7 @@ We discretize the derivative of the mountain range's ["steepness"](#steepness-an
 
 $$\dot{s}\_i = \frac{\left( h_{i+1} - h_{i-1} \right)\left( g_{i+1} - g_{i-1} \right)}{2 n}$$
 
-...where $n$ is the number of cells in the `h` and `g` arrays.
+...where $n$ is the number of interior cells in the `h` and `g` arrays.
 
 The simulation stops when the sum of the steepness derivative over the whole mountain range falls below zero--i.e. when the range is at its "steepest."
 
@@ -121,7 +121,7 @@ function dsteepness(h, g)
     for i in firstindex(h)+1:lastindex(h)-1
         ds += (h[i+1]-h[i-1]) * (g[i+1]-g[i-1]) / 2
     end
-    return ds/length(h)
+    return ds/(length(h)/2)
 end
 ```
 
