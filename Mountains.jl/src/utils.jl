@@ -49,20 +49,30 @@ end
 
 
 
-function laplacian(x::AbstractArray{<:Real, N}, i::CartesianIndex{N}) where N
-    L = -N*x[i]
-    for (above, below) in neighborindices(i)
-        L += (x[above]+x[below])/2
-    end
-    return L
-end
+"""
+    gradient(x, i)
 
-
-
+Return the approximated gradient at `x[i]`.
+"""
 function gradient(x::AbstractArray{T, N}, i::CartesianIndex{N}) where {T, N}
     s = zero(T)
     for (above, below) in neighborindices(i)
         s += x[below]-x[above]
     end
     return s/2
+end
+
+
+
+"""
+    laplacian(x, i)
+
+Return the approximated Laplacian at `x[i]`.
+"""
+function laplacian(x::AbstractArray{<:Real, N}, i::CartesianIndex{N}) where N
+    L = -N*x[i]
+    for (above, below) in neighborindices(i)
+        L += (x[above]+x[below])/2
+    end
+    return L
 end

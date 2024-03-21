@@ -12,7 +12,8 @@ Indexing a `MountainRange` returns its height at the given point.
 See LINK for how the crude orogenesis simulation is carried out.
 
 See also [`simtime`](@ref), [`upliftrate`](@ref), [`growthrate`](@ref), [`steepness`](@ref),
-[`dsteepness`](@ref), [`step!`](@ref), and [`solve!`](@ref) for functions that operate on
+[`dsteepness`](@ref), [`jaggedness`](@ref), [`djaggedness`](@ref), [`ruggedness`](@ref),
+[`druggedness`](@ref), [`step!`](@ref), and [`solve!`](@ref) for functions that operate on
 `MountainRange`s.
 
 # Examples

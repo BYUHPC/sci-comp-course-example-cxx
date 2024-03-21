@@ -58,9 +58,9 @@ invertaxes(x::AbstractArray{T, N}) where {T, N} = permutedims(x, ntuple(n->N-n+1
 
 
 """
-    MountainRange([T=$defaultT, I=$defaultI,] io::IO; checkstreamlength=io isa IOStream)
+    MountainRange([T=$defaultT, I=$defaultI,] io_or_filename; checkstreamlength=false)
 
-Create a `MountainRange{T}` by reading binary from `io`.
+Create a `MountainRange{T}` by reading binary from `io_or_filename`.
 
 The number of dimensions of the `MountainRange` is determined by reading the first element
 of the binary stream.
@@ -71,7 +71,8 @@ seems obviously corrupt, or if the stream contains more data than necessary and
 
 See also [`write`](@ref) for the binary format of a `MountainRange`.
 """
-function MountainRange(T::Type, I::Type, io::IO; checkstreamlength=io isa IOStream)
+function MountainRange(T::Type, I::Type, io_or_filename::Union{IO,AbstractString};
+                       checkstreamlength=false)
     # Initialize all elements so that information can still be conveyed on failure
     N = 1
     dims = (one(I),)
@@ -79,6 +80,8 @@ function MountainRange(T::Type, I::Type, io::IO; checkstreamlength=io isa IOStre
     r, h = ntuple(n->[typemax(T)], 2)
     makerange() = MountainRange(t, (invertaxes(x) for x in (r, h))...)
     try
+        # Open IOstream
+        io = io_or_filename isa IO ? io_or_filename : open(io_or_filename)
         # Read header
         N = read(io, I)
         if N < 1 || N > 16
@@ -110,14 +113,16 @@ function MountainRange(T::Type, I::Type, io::IO; checkstreamlength=io isa IOStre
     end
 end
 
-MountainRange(io::IO; kw...) = MountainRange(defaultT, defaultI, io; kw...)
+function MountainRange(io_or_filename::Union{IO,AbstractString}; kw...)
+    MountainRange(defaultT, defaultI, io_or_filename; kw...)
+end
 
 
 
 """
-    write([I=$defaultI,] io, m::MountainRange{T, N})
+    write([I=$defaultI,] io_or_filename, m::MountainRange{T, N})
 
-Serialize a `MountainRange` to `io`.
+Serialize a `MountainRange` to `io_or_filename`.
 
 The serialization format is as follows, with no separation between values:
 
@@ -134,4 +139,10 @@ function Base.write(I::Type{<:Integer}, io::IO, m::MountainRange)
             write(io, (invertaxes(x) for x in (m.r, m.h))...))
 end
 
+function Base.write(I::Type{<:Integer}, filename::AbstractString, m::MountainRange)
+    return write(I, open(filename), m)
+end
+
 Base.write(io::IO, m::MountainRange) = write(defaultI, io, m)
+
+Base.write(filename::AbstractString, m::MountainRange) = write(defaultI, filename, m)
