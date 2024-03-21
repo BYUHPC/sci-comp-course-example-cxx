@@ -18,11 +18,8 @@ end
 
 
 
-# Get the result of `r-h³+∇²h`
-function dhdt(h, r, t)
-    # Allocate growth rate array
-    g = zeros(length(h))
-
+# Store the result of `r-h³+∇²h` in `g`
+function dhdt!(g, h, r, t)
     # Set each interior cell of g
     for i in firstindex(h)+1:lastindex(h)-1
         L = (h[i-1]+h[i+1])/2 - h[i]
@@ -33,8 +30,8 @@ function dhdt(h, r, t)
     g[begin] = g[begin+1]
     g[end]   = g[end-1]
 
-    # Return g
-    return g
+    # Nothing needs to be returned since g has been updated in place
+    return nothing
 end
 
 
@@ -42,7 +39,8 @@ end
 # Return `2/X ∫∇h⋅∇ḣ dx`, where X is the length of h.
 function dsteepness(h, r)
     # Calculate growth rate
-    g = dhdt(h, r, 0)
+    g = zeros(size(h)...)
+    dhdt!(g, h, r, 0)
 
     # Calculate ds
     return sum(function(i)
@@ -60,7 +58,7 @@ function solve!(m::MountainRange)
 
     # Define and solve the problem
     timespan = (0.0, typemax(eltype(m.r)))
-    prob = ODEProblem(dhdt, m.h, timespan, m.r, callback=cb)
+    prob = ODEProblem{true}(dhdt!, m.h, timespan, m.r, callback=cb)
     sol = solve(prob)
 
     # Update and return m
