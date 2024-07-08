@@ -90,10 +90,6 @@ public:
             })) {
         // Initialize g
         step(0);
-        for (auto t=0; t<nthreads; t++) {
-            auto [first, last] = this_thread_cell_range(t);
-            std::cout << "Thread " << t << " in charge of " << first << "-" << last << std::endl;
-        }
     }
 
 
