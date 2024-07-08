@@ -12,7 +12,7 @@
 
 
 // Tolerances
-const MountainRange::value_type acceptable_time_ratio         = 1.0001,
+const MountainRange::value_type acceptable_time_ratio         = 0.9999,
                                 acceptable_height_error_ratio = 0.000001; // TODO: should this increase with time?
 
 
@@ -54,9 +54,10 @@ int main(int argc, char **argv) {
     auto t1 = m1.sim_time(), t2 = m2.sim_time();
 
     // Make sure that times are about the same
-    auto time_ratio = t1 > 0 || t2 > 0 ? t1 / t2 : 1;
-    ensure(time_ratio < acceptable_time_ratio && time_ratio > 1/acceptable_time_ratio,
-           "Simulation times (", t1, " and ", t2, ") are not within tolerance");
+    auto lower_time = std::min(t1, t2);
+    auto upper_time = std::max(t1, t2);
+    auto time_ratio = upper_time > 0 ? lower_time/upper_time : 1;
+    ensure(time_ratio > acceptable_time_ratio, "Simulation times (", t1, " and ", t2, ") are not within tolerance");
 
     // Make sure sizes are the same
     ensure(h1.size() == h2.size(), "Sizes (", h1.size(), " and ", h2.size(), ") are not the same");
