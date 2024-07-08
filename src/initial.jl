@@ -53,7 +53,7 @@ end
 # Solve and return a mountain range using ODEProblem
 function solve!(m::MountainRange)
     # Callback that tells the solver when it's done (when dsteepness crosses zero)
-    terminationcondition(h, t, integrator) = dsteepness(h, m.r)
+    terminationcondition(h, t, integrator) = dsteepness(h, m.r)-eps(eltype(m.r))
     cb = ContinuousCallback(terminationcondition, terminate!)
 
     # Define and solve the problem
