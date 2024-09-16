@@ -25,7 +25,7 @@ namespace {
  *       3 4 5 6 7 8
  *
  * Process A is in charge of updating cells 0-3, process B is in charge of updating cells 4-7, and process C is in
- * charge of updating cells 8-9. Because updaing a cell in g depends on the adjacent cells in the array, halos are also
+ * charge of updating cells 8-9. Because updating a cell in g depends on the adjacent cells in the array, halos are also
  * stored--process A stores cell 4, process B cells 3 and 8, and process C cell 7. These halos are updated on each
  * iteration to keep the grid consistent between processes--for example, at the end of an iteration, process A will
  * receive the value in process B's cell 4 and store it in its own cell 4.
