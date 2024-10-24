@@ -47,7 +47,7 @@ The other binaries mirror those that will be built for the C++ phases of the pro
 
 In addition to the source files listed above, each binary uses the base class [MountainRange](src/MountainRange.hpp), and each `mountainsolve_*` uses [binary_io](simple-cxx-binary-io/binary_io.hpp) and [mountainsolve](src/mountainsolve.hpp).
 
-\* `mountainsolve_serial` uses identical code to `mountainsolve_openmp`, but is compiled without OpenMP--part of the beauty of OpenMP. `mountainsolve_mpi` is only built if an MPI compiler is found. `mountainsolve_gpu` is only built if the compiler is [Nvidia's HPC SDK](https://developer.nvidia.com/hpc-sdk). On [our supercomputer](https://rc.byu.edu/), you can access an MPI compiler with `module load gcc/latest openmpi mpl`, and Nvidia's HPC SDK with `module load nvhpc`.
+\* `mountainsolve_serial` uses identical code to `mountainsolve_openmp`, but is compiled without OpenMP--part of the beauty of OpenMP. `mountainsolve_mpi` is only built if an MPI compiler is found. `mountainsolve_gpu` is only built if the compiler is [Nvidia's HPC SDK](https://developer.nvidia.com/hpc-sdk). On [our supercomputer](https://rc.byu.edu/), you can access an MPI compiler with `module load gcc openmpi mpl`, and Nvidia's HPC SDK with `module load nvhpc`.
 
 Each generated `mountainsolve_*` has a help message explaining its usage; use `<binary-name> --help` to print it.
 
