@@ -15,13 +15,16 @@
 namespace {
     // Create a vector of threads, each of which will run F(thread_id) in a while loop until F() returns false
     auto looping_threadpool(auto thread_count, auto F) {
-        std::vector<std::jthread> threads;
-        threads.reserve(thread_count);
+        std::vector<std::jthread> threads;  // Creates an empty vector of threads.
+        threads.reserve(thread_count);  // Creates thread_count threads for use later.  Sets the size of the thread vector.  Sets the capacity if the vector.
         for (size_t tid=0; tid<thread_count; tid++) {
-            threads.emplace_back([F, tid]{
+            threads.emplace_back([F, tid]{ // pushes an element to the end of the vector.
                 while (F(tid));
             });
         }
+        // thread = std::jthread([function, int]{...})
+        // jthread constructor is a lambda function.
+        // struct is like a class but it just holds data (variables).
         return threads;
     }
 };
