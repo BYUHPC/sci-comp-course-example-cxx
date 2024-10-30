@@ -2,7 +2,8 @@
 
 > [!IMPORTANT]
 > This diagram relies on [Mermaid diagrams](https://mermaid.js.org/) which display properly when rendered within GitHub.
-> 
+>
+> <!-- TODO: Update link once this file is in it's final location -->
 > It may not work properly when rendered within other websites. [Click here to view the source](https://github.com/BYUHPC/sci-comp-course-example-cxx/blob/main/docs/threaded-sequence-diagram.md).
 
 ## Intro
