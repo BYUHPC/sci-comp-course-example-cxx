@@ -3,8 +3,7 @@
 > [!IMPORTANT]
 > This diagram relies on [Mermaid diagrams](https://mermaid.js.org/) which display properly when rendered within GitHub.
 >
-> <!-- TODO: Update link once this file is in it's final location -->
-> It may not work properly when rendered within other websites. [Click here to view the source](https://github.com/BYUHPC/sci-comp-course-example-cxx/blob/main/docs/threaded-sequence-diagram.md).
+> It may not work properly when rendered within other websites. [Click here to view the source](https://github.com/BYUHPC/sci-comp-course-example-cxx/blob/main/docs/MountainRangeThreaded-sequence-diagram.md).
 
 ## Intro
 
@@ -16,9 +15,9 @@ the various entities involved in running the program. The close reader will obse
 to methods on the base or subclass of the `MountainRange` object.
 
 The code covered by this diagram exists in three separate example files:
-* [MountainRangeThreaded.hpp](https://github.com/BYUHPC/sci-comp-course-example-cxx/blob/main/src/MountainRangeThreaded.hpp) (sub-class)
-* [MountainRange.hpp](https://github.com/BYUHPC/sci-comp-course-example-cxx/blob/main/src/MountainRange.hpp) (base class)
-* [mountainsolve.cpp](https://github.com/BYUHPC/sci-comp-course-example-cxx/blob/main/src/mountainsolve.cpp) (driver code)
+* [MountainRangeThreaded.hpp](../src/MountainRangeThreaded.hpp) (sub-class)
+* [MountainRange.hpp](../src/MountainRange.hpp) (base class)
+* [mountainsolve.cpp](../src/mountainsolve.cpp) (driver code)
 
 ## Diagram
 
