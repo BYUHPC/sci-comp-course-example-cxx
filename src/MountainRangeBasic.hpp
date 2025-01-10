@@ -17,7 +17,6 @@ public:
 protected:
     // Parameters and members
     static constexpr const value_type default_dt = 0.01;
-    static constexpr const size_t header_size = sizeof(size_type) * 2 + sizeof(value_type);
     const size_type ndims, cells;
     value_type t;
     std::vector<value_type> r, h, g;
@@ -80,11 +79,11 @@ public:
 
 
     // Step until dsteepness() falls below 0, checkpointing along the way
-    value_type solve(value_type dt=default_dt) {
+    value_type solve() {
 
         // Solve loop
         while (dsteepness() > std::numeric_limits<value_type>::epsilon()) {
-            step(dt);
+            step(default_dt);
         }
 
         // Return total simulation time
