@@ -9,7 +9,7 @@
 
 This [sequence diagram](https://mermaid.js.org/syntax/sequenceDiagram.html#sequence-diagrams) written with Mermaid visually represents the calls and work being performed in the `MountainRange` example.
 
-It is designed to help visualize the relationships between the various entities involved in running the program.
+It is designed to help visualize the relationships between the various entities involved in running the program. This diagram emphasizes the new requirements and behaviors being added in Phase 2. Compare against the [MountainRangeBasic sequence diagram](./MountainRangeBasic-sequence-diagram.md).
 
 The code covered by this diagram exists in two separate example files:
 * [MountainRange.hpp](../src/MountainRange.hpp) (base class)
@@ -43,9 +43,7 @@ main->>+MR: constructor(infile)
     MR->>BIO: try_read_bytes() [r]
     MR->>BIO: try_read_bytes() [h]
 
-    MR->>+MR: step(0)
-    note right of MR: Initialize g
-    MR-->>-MR: void
+    MR->>MR: step(0)
 MR-->>-main: MountainRange
 %% End construct MountainRange
 
@@ -56,27 +54,12 @@ main->>+MR: solve()
     loop While dsteepness() > epsilon()
         
         %% Evaluate steepness
-        MR->>+MR: dsteepness()
-            loop for cell in interior cells
-                MR->>MR: ds_cell(cell)
-            end
-        MR-->>-MR: total energy
+        MR->>MR: dsteepness()
+        note right of MR: Calculate steepness,<br>same as before.
         
         %% Perform step
-        MR->>+MR: step()
-            %% Modify h cells
-            loop for cell in cells
-                MR->>MR: update_h_cell(cell)
-            end
-
-            %% Modify g cells
-            loop for cell in interior cells
-                MR->>MR: update_g_cell(cell)
-            end
-
-            %% Update other state variables
-            note right of MR: Update other state variables
-        MR-->>-MR: void
+        MR->>MR: step()
+        note right of MR: Advance simulation,<br>same as before.
 
         %% Optionally checkpoint
         opt should_perform_checkpoint()
@@ -93,7 +76,6 @@ MR-->>-main: t
 %% End solve
 
 %% Print result
-note over main,MR: Print Result
 main->>cout: "solved. simulation time: " << t << std::endl
 %% end print
 
