@@ -166,6 +166,19 @@ protected:
         return ((h[i-1] - h[i+1]) * (g[i-1] - g[i+1])) / 2 / (cells - 2);
     }
 
+private:
+    // Read checkpoint interval from environment
+    value_type get_checkpoint_interval() {
+        value_type checkpoint_interval = 0;
+        auto INTVL = std::getenv("INTVL");
+        if (INTVL != nullptr) std::from_chars(INTVL, INTVL+std::strlen(INTVL), checkpoint_interval);
+        return checkpoint_interval;
+    }
+
+    // Determine if a checkpoint should occur on this iteration
+    constexpr short should_perform_checkpoint(auto checkpoint_interval, auto dt) const {
+        return checkpoint_interval > 0 && fmod(t+dt/5, checkpoint_interval) < 2*dt/5;
+    }
 
 
 public:
@@ -202,17 +215,14 @@ public:
 
     // Step until dsteepness() falls below 0, checkpointing along the way
     value_type solve(value_type dt=default_dt) {
-        // Read checkpoint interval from environment
-        value_type checkpoint_interval = 0;
-        auto INTVL = std::getenv("INTVL");
-        if (INTVL != nullptr) std::from_chars(INTVL, INTVL+std::strlen(INTVL), checkpoint_interval);
+        auto checkpoint_interval = get_checkpoint_interval();
 
         // Solve loop
         while (dsteepness() > std::numeric_limits<value_type>::epsilon()) {
             step(dt);
 
             // Checkpoint if requested
-            if (checkpoint_interval > 0 && fmod(t+dt/5, checkpoint_interval) < 2*dt/5) {
+            if (should_perform_checkpoint(checkpoint_interval, dt)) {
                 auto check_file_name = std::format("chk-{:07.2f}.wo", t).c_str();
                 write(check_file_name);
             }
