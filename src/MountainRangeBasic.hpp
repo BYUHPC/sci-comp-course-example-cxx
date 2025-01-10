@@ -27,7 +27,6 @@ protected:
     std::vector<value_type> r, h, g;
 
 
-
 public:
     // Accessors
     auto size()         const { return cells; }
@@ -35,25 +34,10 @@ public:
     auto &uplift_rate() const { return r; }
     auto &height()      const { return h; }
 
-
-
-protected:
-    // Basic constructor
-    MountainRange(auto ndims, auto cells, auto t, const auto &r, const auto &h): ndims{ndims}, cells{cells}, t{t},
-                                                                                 r(r), h(h), g(h) {
-        if (ndims != 1) handle_wrong_dimensions();
-        step(0); // initialize g
-    }
-
-    // Error handlers for I/O constructors
-    static void handle_wrong_dimensions() {
-        throw std::logic_error("Input file is corrupt or multi-dimensional, which this implementation doesn't support");
-    }
-
-
-public:
     // Build a MountainRange from an uplift rate and a current height
-    MountainRange(const auto &r, const auto &h): MountainRange(1ul, r.size(), 0.0, r, h) {}
+    MountainRange(const auto &r, const auto &h) : ndims{1ul}, cells{r.size()}, t{0.0}, r{r}, h{h} {
+        step(0);
+    }
 
 
 protected:
