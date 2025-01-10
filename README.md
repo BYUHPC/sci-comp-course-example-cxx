@@ -38,7 +38,7 @@ The other binaries mirror those that will be built for the C++ phases of the pro
 
 | Corresponding phase | Binary | Source files |
 | --- | --- | --- |
-| [Phase 1](https://byuhpc.github.io/sci-comp-course/project/phase1) | `initial` | [initial](src/initial.cpp), [MountainRange](src/MountainRange.hpp) |
+| [Phase 1](https://byuhpc.github.io/sci-comp-course/project/phase1) | `initial` | [initial](src/initial.cpp), [MountainRangeBasic](src/MountainRangeBasic.hpp) |
 | [Phase 2](https://byuhpc.github.io/sci-comp-course/project/phase2) | `mountainsolve_serial`* | [MountainRange](src/MountainRange.hpp) |
 | [Phase 3](https://byuhpc.github.io/sci-comp-course/project/phase3) | `mountainsolve_openmp` | [MountainRange](src/MountainRange.hpp) |
 | [Phase 6](https://byuhpc.github.io/sci-comp-course/project/phase6) | `mountainsolve_thread` | [MountainRangeThreaded](src/MountainRangeThreaded.hpp) |

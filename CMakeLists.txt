@@ -33,7 +33,7 @@ endif()
 add_executable(mountaindiff src/mountaindiff.cpp ${COMMON_INCLUDES})
 
 # initial
-add_executable(initial src/initial.cpp ${COMMON_INCLUDES})
+add_executable(initial src/initial.cpp src/MountainRangeBasic.hpp)
 
 # mountainsolve_serial
 add_executable(mountainsolve_serial src/mountainsolve.cpp ${COMMON_INCLUDES})
