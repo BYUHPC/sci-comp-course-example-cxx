@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <cmath>
 #include <limits>
 
 
@@ -30,7 +31,7 @@ public:
     auto &height()      const { return h; }
 
     // Build a MountainRange from an uplift rate and a current height
-    MountainRange(const auto &r, const auto &h) : ndims{1ul}, cells{r.size()}, t{0.0}, r{r}, h{h} {
+    MountainRangeBasic(const auto &r, const auto &h): ndims{1ul}, cells{r.size()}, t{0.0}, r{r}, h{h} {
         step(0);
     }
 
