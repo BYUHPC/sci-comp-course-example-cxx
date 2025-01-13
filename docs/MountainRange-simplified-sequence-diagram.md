@@ -1,4 +1,4 @@
-# Mountain Range — Simplified — Sequence Diagram
+# Mountain Range (Simplified) — Sequence Diagram
 
 > [!IMPORTANT]
 > This diagram relies on [Mermaid diagrams](https://mermaid.js.org/) which display properly when rendered within GitHub.
@@ -22,7 +22,7 @@ The code covered by this diagram exists in two separate example files:
 
 ```mermaid
 ---
-title: Mountain Range — Simplified — Sequence Diagram
+title: Mountain Range (Simplified) — Sequence Diagram
 ---
 
 sequenceDiagram
