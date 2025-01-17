@@ -40,6 +40,8 @@ activate main
 note over main,MR: Construct MountainRange
 main->>+MR: constructor()
 
+    note right of MR: Call parent constructor. <br> Read data from file.
+
     %% Create dw workers
     create participant dw as ds_workers (x8)
     MR->>+dw: spawn(8)
@@ -87,6 +89,7 @@ MR-->>-main: t
 %% Call Write
 note over main,MR: Write Result
 main->>+MR: write()
+note right of MR: Inherited method.<br>Write result to file.
 MR-->>-main: void
 %% End write
 
