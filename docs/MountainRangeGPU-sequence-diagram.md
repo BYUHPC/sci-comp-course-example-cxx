@@ -30,6 +30,10 @@ sequenceDiagram
 
 participant main
 participant MR as MountainRange
+participant GPU
+participant kernel as GPU Kernel (x1000 ish)
+
+note over GPU, kernel: GPU Unit has its own specialized memory <br>which enables the fast execution from many<br> kernels concurrently.<br><br>Data must be copied back and forth<br>from main memory, and other limitations<br> apply because of the limited memory model.
 
 note left of main: Program starts
 activate main
@@ -49,46 +53,82 @@ main->>+MR: solve()
         %% Evaluate steepness
         MR->>+MR: dsteepness()
             MR->>+MR: index_range(h)
-            note right of MR: Create a Range View<br> compatible with GPU which.
-            MR-->>-MR: tuple<range_view_begin, range_view_end>
+            note right of MR: Create a Range View<br> compatible with GPU.
+            MR-->>-MR: tuple<itr_begin, itr_end>
 
             note right of MR: Standard syntax `std::transform_reduce`<br> compiles to GPU specific instructions
-            create participant GPU
-            MR->>GPU: transform_reduce()
+            MR->>+GPU: std::transform_reduce()
 
                 note right of GPU: Compiled code copies `g` and `h`<br> into GPU specific memory.
-
                 note right of GPU: total = 0
+                GPU->>+kernel: init
 
-                create participant kernel as GPU Kernel (x1000 ish)
-                GPU->kernel: init
-                par GPU to kernel1
-                GPU->>kernel: transform(1)
-                note right of kernel: Each kernel processes<br>a single cell. <br>Effectively: `ds_cell(1)`
+                par to kernel1
+                GPU->>kernel: Effectively: `ds_cell(1)`
                 kernel->>GPU: reduce(ans, total)
-                and GPU to kernel2
-                GPU->>kernel: transform(2)
-                note right of kernel: Effectively: `ds_cell(2)`
+                and to kernel2
+                GPU->>kernel: Effectively: `ds_cell(2)`
                 kernel->>GPU: reduce(ans, total)
-                and GPU to kernelN
-                GPU->>kernel: transform(N)
-                note right of kernel: Effectively: `ds_cell(N)`
+                and to kernelN
+                GPU->>kernel: Effectively: `ds_cell(N)`
                 kernel->>GPU: reduce(ans, total)
                 end
 
-                destroy kernel
-                GPU-xkernel: deinit  
-
+                kernel-->>-GPU: deinit
                 note right of GPU: Compiled code releases <br>`g` and `h` in GPU memory.
 
-            destroy GPU
-            GPU-->>MR: value_type <br>[total accumulated from kernels]
+            GPU-->>-MR: value_type <br>[total accumulated from kernels]
 
         MR-->>-MR: total energy
         
         %% Perform step
         MR->>+MR: step()
-        
+
+            MR->>+MR: index_range(h)
+            MR-->>-MR: tuple<itr_begin, itr_end>
+
+            note right of MR: Standard syntax `std::for_each`<br> compiles to GPU specific instructions
+
+            %% Update h cells
+            MR->>+GPU: std::for_each()
+
+                note right of GPU: Copy `g` and `h` into GPU memory.
+                GPU->>+kernel: init
+
+                par to kernel1
+                GPU->>kernel: Effectively: `update_h_cell(1)`
+                and to kernel2
+                GPU->>kernel: Effectively: `update_h_cell(2)`
+                and to kernelN
+                GPU->>kernel: Effectively: `update_h_cell(N)`
+                end
+
+                kernel-->>-GPU: deinit
+                note right of GPU: Compiled code copies modified <br>`g` and `h` from GPU memory <br>back to main memory.
+
+            GPU-->>-MR: void
+            %% END update h cells
+
+            %% Update g cells
+            MR->>+GPU: std::for_each()
+
+                note right of GPU: Copy `g` and `h` into GPU memory.
+                GPU->>+kernel: init
+
+                par to kernel1
+                GPU->>kernel: Effectively: `update_g_cell(1)`
+                and to kernel2
+                GPU->>kernel: Effectively: `update_g_cell(2)`
+                and to kernelN
+                GPU->>kernel: Effectively: `update_g_cell(N)`
+                end
+
+                kernel-->>-GPU: deinit
+                note right of GPU: Copy modified `g` and `h` to main.
+
+            GPU-->>-MR: void
+            %% END update g cells
+
         MR-->>-MR: void
     
     end
@@ -98,6 +138,7 @@ MR-->>-main: t
 %% Call Write
 note over main,MR: Write Result
 main->>+MR: write()
+note right of MR: Inherited method.<br>Write result to file.
 MR-->>-main: void
 %% end write
 
