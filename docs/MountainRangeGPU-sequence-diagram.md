@@ -59,7 +59,7 @@ main->>+MR: solve()
             MR-->>-MR: tuple<itr_begin, itr_end>
 
             %% Sum steepness from each cell
-            note right of MR: Standard syntax `std::transform_reduce`<br> compiles to GPU specific instructions
+            note right of MR: Standard syntax `std::transform_reduce`<br> compiles to GPU specific instructions.
             MR->>+GPU: std::transform_reduce()
 
                 note right of GPU: Compiled code copies `g` and `h`<br> into GPU specific memory.
@@ -94,7 +94,7 @@ main->>+MR: solve()
             MR->>+MR: index_range(h)
             MR-->>-MR: tuple<itr_begin, itr_end>
 
-            note right of MR: Standard syntax `std::for_each`<br> compiles to GPU specific instructions
+            note right of MR: Standard syntax `std::for_each`<br> compiles to GPU specific instructions.
 
             %% Update h cells
             MR->>+GPU: std::for_each()
