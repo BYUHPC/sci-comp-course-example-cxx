@@ -48,14 +48,17 @@ MR-->>-main: MountainRange
 %% Call Solve
 note over main,MR: Begin Solving
 main->>+MR: solve()
+
+    %% Begin solve loop
     loop Until steepness < epsilon()
-        
+
         %% Evaluate steepness
         MR->>+MR: dsteepness()
             MR->>+MR: index_range(h)
             note right of MR: Create a Range View<br> compatible with GPU.
             MR-->>-MR: tuple<itr_begin, itr_end>
 
+            %% Sum steepness from each cell
             note right of MR: Standard syntax `std::transform_reduce`<br> compiles to GPU specific instructions
             MR->>+GPU: std::transform_reduce()
 
@@ -63,6 +66,7 @@ main->>+MR: solve()
                 note right of GPU: total = 0
                 GPU->>+kernel: init
 
+                %% Execute instructions in parallel
                 par to kernel1
                 GPU->>kernel: Effectively: `ds_cell(1)`
                 kernel->>GPU: reduce(ans, total)
@@ -73,14 +77,17 @@ main->>+MR: solve()
                 GPU->>kernel: Effectively: `ds_cell(N)`
                 kernel->>GPU: reduce(ans, total)
                 end
+                %% End parallel execution
 
                 kernel-->>-GPU: deinit
                 note right of GPU: Compiled code releases <br>`g` and `h` in GPU memory.
 
             GPU-->>-MR: value_type <br>[total accumulated from kernels]
+            %% End steepness summation
 
         MR-->>-MR: total energy
-        
+        %% End steepness evaluation
+
         %% Perform step
         MR->>+MR: step()
 
@@ -95,6 +102,7 @@ main->>+MR: solve()
                 note right of GPU: Copy `g` and `h` into GPU memory.
                 GPU->>+kernel: init
 
+                %% Execute instructions in parallel
                 par to kernel1
                 GPU->>kernel: Effectively: `update_h_cell(1)`
                 and to kernel2
@@ -102,12 +110,13 @@ main->>+MR: solve()
                 and to kernelN
                 GPU->>kernel: Effectively: `update_h_cell(N)`
                 end
+                %% End parallel execution
 
                 kernel-->>-GPU: deinit
                 note right of GPU: Compiled code copies modified <br>`g` and `h` from GPU memory <br>back to main memory.
 
             GPU-->>-MR: void
-            %% END update h cells
+            %% End update h cells
 
             %% Update g cells
             MR->>+GPU: std::for_each()
@@ -115,6 +124,7 @@ main->>+MR: solve()
                 note right of GPU: Copy `g` and `h` into GPU memory.
                 GPU->>+kernel: init
 
+                %% Execute instructions in parallel
                 par to kernel1
                 GPU->>kernel: Effectively: `update_g_cell(1)`
                 and to kernel2
@@ -122,16 +132,20 @@ main->>+MR: solve()
                 and to kernelN
                 GPU->>kernel: Effectively: `update_g_cell(N)`
                 end
+                %% End parallel execution
 
                 kernel-->>-GPU: deinit
                 note right of GPU: Copy modified `g` and `h` to main.
 
             GPU-->>-MR: void
-            %% END update g cells
+            %% End update g cells
 
         MR-->>-MR: void
-    
+        %% End step
+
     end
+    %% End solve loop
+
 MR-->>-main: t
 %% End solve
 
@@ -140,7 +154,7 @@ note over main,MR: Write Result
 main->>+MR: write()
 note right of MR: Inherited method.<br>Write result to file.
 MR-->>-main: void
-%% end write
+%% End write
 
 note left of main: Program exits
 deactivate main

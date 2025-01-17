@@ -39,27 +39,35 @@ activate main
 %% Construct MountainRange
 note over main,MR: Construct MountainRange
 main->>+MR: constructor()
+
+    %% Create dw workers
     create participant dw as ds_workers (x8)
     MR->>+dw: spawn(8)
     dw->>dw: arrive_and_wait()
+
+    %% Create sw workers
     create participant sw as step_workers (x8)
     MR->>+sw: spawn(8)
     sw->>sw: arrive_and_wait()
+
 MR-->>-main: MountainRange
 %% End construct MountainRange
 
 %% Call Solve
 note over main,MR: Begin Solving
 main->>+MR: solve()
+
+    %% Begin solve loop
     loop Until steepness < epsilon()
-        
+
         %% Evaluate steepness
         MR->>+MR: dsteepness()
             MR--)dw: arrive_and_wait()
             note over dw: Worker threads proceed<br>to do work and <br>store result in <br>`ds_aggregator`
             MR<<-->>dw: arrive_and_wait()
         MR-->>-MR: total energy
-        
+        %% End steepness calculation
+
         %% Perform step
         MR->>+MR: step()
             MR--)sw: arrive_and_wait()
@@ -68,8 +76,11 @@ main->>+MR: solve()
             note over sw: Worker threads proceed<br>to modify `g` cells
             MR<<-->>sw: arrive_and_wait()
         MR-->>-MR: void
-    
+        %% End step
+
     end
+    %% End solve loop
+
 MR-->>-main: t
 %% End solve
 
@@ -77,22 +88,27 @@ MR-->>-main: t
 note over main,MR: Write Result
 main->>+MR: write()
 MR-->>-main: void
-%% end write
+%% End write
 
 %% Destruct MountainRange
 note over main,MR: Destruct MountainRange
 main--x+MR: ~MountainRange()
+
+    %% Destruct dw workers
     MR--xdw: arrive_and_wait()
     deactivate dw
     %%destroy dw
     note over dw: steepness threads<br>stop and rejoin
+
+    %% Destruct sw workers
     MR--xsw: arrive_and_wait()
     deactivate sw
     %%destroy sw
     note over sw: stepping threads<br>stop and rejoin
+
 MR-->>-main: void
 destroy MR
-%% end destruct MountainRange
+%% End destruct MountainRange
 
 note left of main: Program exits
 deactivate main
