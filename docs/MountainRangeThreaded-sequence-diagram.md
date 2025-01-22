@@ -24,8 +24,6 @@ The code covered by this diagram exists in three separate example files:
 ```mermaid
 ---
 title: Mountain Range Threaded — Sequence Diagram
-config:
-  mirrorActors: false
 ---
 
 sequenceDiagram
@@ -98,16 +96,16 @@ note over main,MR: Destruct MountainRange
 main--x+MR: ~MountainRange()
 
     %% Destruct dw workers
-    MR--xdw: arrive_and_wait()
+    MR<<-->>dw: arrive_and_wait()
     deactivate dw
-    %%destroy dw
-    note over dw: steepness threads<br>stop and rejoin
+    destroy dw
+    MR--xdw: threads auto join and stop
 
     %% Destruct sw workers
-    MR--xsw: arrive_and_wait()
+    MR<<-->>sw: arrive_and_wait()
     deactivate sw
-    %%destroy sw
-    note over sw: stepping threads<br>stop and rejoin
+    destroy sw
+    MR--xsw: threads auto join and stop
 
 MR-->>-main: void
 destroy MR
@@ -115,5 +113,4 @@ destroy MR
 
 note left of main: Program exits
 deactivate main
-
 ```
