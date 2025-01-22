@@ -71,7 +71,7 @@ main->>+MR: solve()
         %% Evaluate steepness
         MR->>+MR: dsteepness()
             MR--)dw: arrive_and_wait()
-            note over dw: Worker threads proceed<br>to do work and <br>store result in <br>`ds_aggregator`
+            note over dw: Worker threads proceed<br>to do work and <br>store result in <br>`ds_aggregator`.
             MR<<-->>dw: arrive_and_wait()
             dw-->>-dw: true
             dw->>+dw: F()
@@ -81,9 +81,9 @@ main->>+MR: solve()
         %% Perform step
         MR->>+MR: step()
             MR--)sw: arrive_and_wait()
-            note over sw: Worker threads proceed<br>to modify `h` cells
+            note over sw: Worker threads proceed<br>to modify `h` cells.
             MR<<-->>sw: arrive_and_wait()
-            note over sw: Worker threads proceed<br>to modify `g` cells
+            note over sw: Worker threads proceed<br>to modify `g` cells.
             MR<<-->>sw: arrive_and_wait()
             sw-->>-sw: true
             sw->>+sw: F()
