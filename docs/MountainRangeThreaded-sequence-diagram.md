@@ -41,14 +41,22 @@ main->>+MR: constructor()
     note right of MR: Call parent constructor. <br> Read data from file.
 
     %% Create dw workers
+    MR->>+MR: looping_threadpool()
     create participant dw as ds_workers (x8)
-    MR->>+dw: spawn(8)
+    MR->>+dw: new jthread()
+    dw->>+dw: F()
     dw->>dw: arrive_and_wait()
+    MR-->>-MR: vector<jthread>
+    %% End create dw workers
 
     %% Create sw workers
+    MR->>+MR: looping_threadpool()
     create participant sw as step_workers (x8)
-    MR->>+sw: spawn(8)
+    MR->>+sw: new jthread()
+    sw->>+sw: F()
     sw->>sw: arrive_and_wait()
+    MR-->>-MR: vector<jthread>
+    %% End create sw workers
 
 MR-->>-main: MountainRange
 %% End construct MountainRange
@@ -65,6 +73,8 @@ main->>+MR: solve()
             MR--)dw: arrive_and_wait()
             note over dw: Worker threads proceed<br>to do work and <br>store result in <br>`ds_aggregator`
             MR<<-->>dw: arrive_and_wait()
+            dw-->>-dw: true
+            dw->>+dw: F()
         MR-->>-MR: total energy
         %% End steepness calculation
 
@@ -75,8 +85,12 @@ main->>+MR: solve()
             MR<<-->>sw: arrive_and_wait()
             note over sw: Worker threads proceed<br>to modify `g` cells
             MR<<-->>sw: arrive_and_wait()
+            sw-->>-sw: true
+            sw->>+sw: F()
         MR-->>-MR: void
         %% End step
+
+        note over dw, sw: `while(F())` loop from looping_threadpool()<br>causes thread instances to be reused <br> between each computational iteration.
 
     end
     %% End solve loop
@@ -97,15 +111,19 @@ main--x+MR: ~MountainRange()
 
     %% Destruct dw workers
     MR<<-->>dw: arrive_and_wait()
+    dw-->>-dw: false
     deactivate dw
     destroy dw
     MR--xdw: threads auto join and stop
+    %% End destruct dw workers
 
     %% Destruct sw workers
     MR<<-->>sw: arrive_and_wait()
+    sw-->>-sw: false
     deactivate sw
     destroy sw
     MR--xsw: threads auto join and stop
+    %% End destruct sw workers
 
 MR-->>-main: void
 destroy MR
