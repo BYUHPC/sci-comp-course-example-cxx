@@ -70,12 +70,14 @@ main->>+MR: solve()
 
         %% Evaluate steepness
         MR->>+MR: dsteepness()
+            MR->>MR: ds_aggregator = 0
             MR--)dw: arrive_and_wait()
             note over dw: Worker threads proceed<br>to do work and <br>store result in <br>`ds_aggregator`.
             MR<<-->>dw: arrive_and_wait()
             dw-->>-dw: true
             dw->>+dw: F()
-        MR-->>-MR: total energy
+            dw->>dw: arrive_and_wait()
+        MR-->>-MR: ds_aggregator
         %% End steepness calculation
 
         %% Perform step
@@ -87,6 +89,7 @@ main->>+MR: solve()
             MR<<-->>sw: arrive_and_wait()
             sw-->>-sw: true
             sw->>+sw: F()
+            sw->>sw: arrive_and_wait()
         MR-->>-MR: void
         %% End step
 
@@ -110,7 +113,7 @@ note over main,MR: Destruct MountainRange
 main--x+MR: ~MountainRange()
 
     %% Destruct dw workers
-    MR<<-->>dw: arrive_and_wait()
+    MR--)dw: arrive_and_wait()
     dw-->>-dw: false
     deactivate dw
     destroy dw
@@ -118,7 +121,7 @@ main--x+MR: ~MountainRange()
     %% End destruct dw workers
 
     %% Destruct sw workers
-    MR<<-->>sw: arrive_and_wait()
+    MR--)sw: arrive_and_wait()
     sw-->>-sw: false
     deactivate sw
     destroy sw
