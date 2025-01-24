@@ -65,6 +65,7 @@ class MountainRangeThreaded {
     - vector~std::jthread~ step_workers
     - atomic~value_type~ ds_aggregator
 
+    %% Helper methods
     + looping_threadpool(thread_count, F)$
     - this_thread_cell_range(tid) std::range
     + std::string help_message$
@@ -78,5 +79,17 @@ class MountainRangeThreaded {
     + step(dt) value_type
 }
 
+class MountainRangeGPU {
+    + index_range(x) tuple~iter_begin, iter_end~$
+
+    %% Constructor
+    + MountainRangeGPU(...)
+
+    %% Override methods
+    + dsteepness() value_type const
+    + step(dt) value_type
+}
+
 MountainRange <|-- MountainRangeThreaded
+MountainRange <|-- MountainRangeGPU
 ```
