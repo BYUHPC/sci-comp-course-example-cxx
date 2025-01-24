@@ -7,7 +7,8 @@ title: Mountain Range — Class Diagram
 classDiagram
 direction LR
 
-class MountainRange {
+class MountainRangeSimplified["MountainRange (Simplified)"]
+class MountainRangeSimplified {
     %% Global type variables (readability + mutability)
     + size_t size_type
     + double value_type
@@ -28,10 +29,23 @@ class MountainRange {
     +uplift_rate() size_type const
     +height() size_type const
 
+    %% Constructor
+    + MountainRange(r, h)
+
+    %% Solving
+    # update_g_cell(i)
+    # update_h_cell(i, dt)
+    # ds_cell(i) const
+
+    + dsteepness() value_type const*
+    + step(dt) value_type*
+    + solve(dt=default_dt) value_type
+}
+
+class MountainRange {
     %% Constructors
     # MountainRange(ndims, cells, t, r, h)
     # MountainRange(std::istream)
-    + MountainRange(r, h)
     + MountainRange(String filename)
 
     %% Error handling
@@ -43,16 +57,11 @@ class MountainRange {
     + write(String filename) void const*
 
     %% Solving
-    # update_g_cell(i)
-    # update_h_cell(i, dt)
-    # ds_cell(i) const
     + split_range(n, rank, size) std::range$
-
     - get_checkpoint_interval() value_type const
     - should_perform_checkpoint() bool const
 
-    + dsteepness() value_type const*
-    + step(dt) value_type*
+    %% Edit implementation
     + solve(dt=default_dt) value_type
 }
 
@@ -115,6 +124,8 @@ class MountainRangeMPI {
     - exchange_halos(x) void
 }
 
+%% Relationships
+MountainRangeSimplified --> MountainRange
 MountainRange <|-- MountainRangeThreaded
 MountainRange <|-- MountainRangeGPU
 MountainRange <|-- MountainRangeMPI
