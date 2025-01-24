@@ -5,6 +5,7 @@
 title: Mountain Range — Class Diagram
 ---
 classDiagram
+direction LR
 
 class MountainRange {
     %% Global type variables (readability + mutability)
@@ -31,15 +32,15 @@ class MountainRange {
     # MountainRange(ndims, cells, t, r, h)
     # MountainRange(std::istream)
     + MountainRange(r, h)
-    + MountainRange(filename)
+    + MountainRange(String filename)
 
     %% Error handling
     # handle_wrong_dimensions()$
-    # handle_write_failure(filename)$
-    # handle_read_failure(filename)$
+    # handle_write_failure(String filename)$
+    # handle_read_failure(String filename)$
 
     %% Output
-    + write(filename) void const*
+    + write(String filename) void const*
 
     %% Solving
     # update_g_cell(i)
@@ -90,6 +91,31 @@ class MountainRangeGPU {
     + step(dt) value_type
 }
 
+class MountainRangeMPI {
+    %% TODO: I'm not sure what this returns
+    + read_at_all(f, offset)$
+    - this_process_cell_range() std::range
+
+    %% Static variables
+    %% These are unique to each worker since each is in a separate process
+    - mpl::communicator comm_world$
+    - int comm_rank$
+    - nt comm_size$
+
+    %% Constructors
+    - MountainRangeMPI(mpl::file)
+    + MountainRangeMPI(String filename)
+
+    %% Override
+    + write(String filename) void const
+    + dsteepness() value_type const
+    + step(dt) value_type
+
+    %% New methods
+    - exchange_halos(x) void
+}
+
 MountainRange <|-- MountainRangeThreaded
 MountainRange <|-- MountainRangeGPU
+MountainRange <|-- MountainRangeMPI
 ```
