@@ -116,7 +116,7 @@ public:
 
 
     // Steepness derivative
-    value_type dsteepness() override {
+    value_type dsteepness() const override {
         // Local and global dsteepness holders
         value_type global_ds, local_ds = 0;
 

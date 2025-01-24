@@ -168,7 +168,7 @@ protected:
 
 private:
     // Read checkpoint interval from environment
-    value_type get_checkpoint_interval() {
+    value_type get_checkpoint_interval() const {
         value_type checkpoint_interval = 0;
         auto INTVL = std::getenv("INTVL");
         if (INTVL != nullptr) std::from_chars(INTVL, INTVL+std::strlen(INTVL), checkpoint_interval);
@@ -183,7 +183,7 @@ private:
 
 public:
     // Calculate the steepness derivative
-    virtual value_type dsteepness() {
+    virtual value_type dsteepness() const {
         value_type ds = 0;
         #pragma omp parallel for reduction(+:ds)
         for (size_t i=1; i<h.size()-1; i++) ds += ds_cell(i);

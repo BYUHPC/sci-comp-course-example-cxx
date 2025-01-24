@@ -104,7 +104,7 @@ public:
 
 
     // Steepness derivative
-    value_type dsteepness() override {
+    value_type dsteepness() const override {
         // Reset reduction destination
         ds_aggregator = 0;
         

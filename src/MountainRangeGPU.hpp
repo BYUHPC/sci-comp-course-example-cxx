@@ -37,7 +37,7 @@ public:
 
 
     // Steepness derivative
-    value_type dsteepness() override {
+    value_type dsteepness() const override {
         // Get iterators to first and last cells to be reduced
         auto [first, last] = index_range(h); // https://tinyurl.com/byusc-structbind
 
