@@ -50,13 +50,14 @@ MR-->>-main: MountainRange
 %% Call Solve
 note over main,MR: Begin Solving
 main->>+MR: solve()
+    %% Begin solve loop
     MR->>MR: get_checkpoint_interval()
     loop While dsteepness() > epsilon()
-        
+
         %% Evaluate steepness
         MR->>MR: dsteepness()
         note right of MR: Calculate steepness,<br>same as before.
-        
+
         %% Perform step
         MR->>MR: step()
         note right of MR: Advance simulation,<br>same as before.
@@ -70,14 +71,17 @@ main->>+MR: solve()
                 MR->>BIO: try_write_bytes() [h]
             MR-->>-MR: void
         end
-    
+        %% End checkpoint
+
     end
+    %% End solve loop
+
 MR-->>-main: t
 %% End solve
 
 %% Print result
 main->>cout: "solved. simulation time: " << t << std::endl
-%% end print
+%% End print
 
 %% Call Write
 note over main,MR: Write Result
@@ -90,7 +94,7 @@ main->>+MR: write(outfile)
     MR->>BIO: try_write_bytes() [h]
 MR-->>-main: void
 main->>cout: "Successfully wrote " << outfile
-%% end write
+%% End write
 
 note left of main: Program exits
 deactivate main

@@ -47,39 +47,49 @@ MR-->>-main: MountainRange
 %% Call Solve
 note over main,MR: Begin Solving
 main->>+MR: solve()
+
+    %% Begin solve loop
     loop While dsteepness() > epsilon()
-        
+
         %% Evaluate steepness
         MR->>+MR: dsteepness()
             loop for cell in interior cells
                 MR->>MR: ds_cell(cell)
             end
         MR-->>-MR: total energy
-        
+        %% End steepness calculation
+
         %% Perform step
         MR->>+MR: step()
-            %% Modify h cells
+
+            %% Update h cells
             loop for cell in cells
                 MR->>MR: update_h_cell(cell)
             end
+            %% End update h cells
 
-            %% Modify g cells
+            %% Update g cells
             loop for cell in interior cells
                 MR->>MR: update_g_cell(cell)
             end
+            %% End update g cells
 
             %% Update other state variables
             note right of MR: Update other state variables
+
         MR-->>-MR: void
-    
+        %% End step
+
     end
+    %% End solve loop
+
 MR-->>-main: t
 %% End solve
 
 %% Print result
 note over main,MR: Print Result
 main->>cout: t << std::endl
-%% end print
+%% End print
 
 note left of main: Program exits
 deactivate main
