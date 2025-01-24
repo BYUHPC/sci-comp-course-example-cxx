@@ -33,6 +33,8 @@ namespace {
  * The MPI within the class is completely self-contained--users don't need to explicitly make any MPI calls.
  */
 class MountainRangeMPI: public MountainRange {
+
+private:
     // MPI-related members (initialized at the bottom of this file)
     static mpl::communicator comm_world;
     static const int comm_rank;
@@ -112,7 +114,7 @@ public:
     } catch (const mpl::io_failure &e) {
         handle_write_failure(filename);
     }
- 
+
 
 
     // Steepness derivative

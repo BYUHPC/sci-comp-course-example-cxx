@@ -30,6 +30,7 @@ namespace {
 
 
 class MountainRangeGPU: public MountainRange {
+
 public:
     // Delegate construction to MountainRange
     using MountainRange::MountainRange;

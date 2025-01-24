@@ -38,6 +38,7 @@ namespace mr {
 
 // Base MountainRange. Derived classes can override write, dsteepness, and step.
 class MountainRange {
+
 public:
     using size_type  = size_t;
     using value_type = double;
@@ -176,7 +177,7 @@ private:
     }
 
     // Determine if a checkpoint should occur on this iteration
-    constexpr short should_perform_checkpoint(auto checkpoint_interval, auto dt) const {
+    constexpr bool should_perform_checkpoint(auto checkpoint_interval, auto dt) const {
         return checkpoint_interval > 0 && fmod(t+dt/5, checkpoint_interval) < 2*dt/5;
     }
 
