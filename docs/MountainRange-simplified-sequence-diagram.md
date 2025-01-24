@@ -11,7 +11,8 @@ This [sequence diagram](https://mermaid.js.org/syntax/sequenceDiagram.html#seque
 the calls and work being performed in the `MountainRange` example.
 
 It is designed to help visualize the relationships between
-the various entities involved in running the program. The close reader will observe stacked activation functions representing calls
+the various entities involved in running the program.
+The close reader will observe stacked activation functions representing calls
 to methods on the base or subclass of the `MountainRange` object.
 
 The code covered by this diagram exists in two separate example files:

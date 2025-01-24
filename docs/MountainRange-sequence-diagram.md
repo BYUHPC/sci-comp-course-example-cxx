@@ -9,7 +9,9 @@
 
 This [sequence diagram](https://mermaid.js.org/syntax/sequenceDiagram.html#sequence-diagrams) written with Mermaid visually represents the calls and work being performed in the `MountainRange` example.
 
-It is designed to help visualize the relationships between the various entities involved in running the program. This diagram emphasizes the new requirements and behaviors being added in Phase 2. Compare against the [MountainRange (simplified) sequence diagram](./MountainRange-simplified-sequence-diagram.md).
+It is designed to help visualize the new behaviors required in Phase 2 relating to file IO and checkpointing.
+While this diagram merely illustrates the difference, the code may evolve to hold all the code in a single file, or separate the concerns into two separate files.
+Compare against the [MountainRange (simplified) sequence diagram](./MountainRange-simplified-sequence-diagram.md).
 
 The code covered by this diagram exists in two separate example files:
 * [MountainRange.hpp](../src/MountainRange.hpp) (base class)

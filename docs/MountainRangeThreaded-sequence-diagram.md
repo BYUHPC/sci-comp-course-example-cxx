@@ -10,9 +10,9 @@
 This [sequence diagram](https://mermaid.js.org/syntax/sequenceDiagram.html#sequence-diagrams) written with Mermaid visually represents
 the calls and work being performed in the `MountainRangeThreaded` example.
 
-It is designed to help visualize the relationships between
-the various entities involved in running the program. The close reader will observe stacked activation functions representing calls
-to methods on the base or subclass of the `MountainRange` object.
+It is designed to help visualize the new model of computation as work is divided among worker threads to occur in parallel.
+The details of thread creation, lifespan, and destruction have been carefully illustrated.
+Operations already defined in the base `MountainRange` class are simplified or omitted in this diagram.
 
 The code covered by this diagram exists in three separate example files:
 * [MountainRangeThreaded.hpp](../src/MountainRangeThreaded.hpp) (sub-class)
