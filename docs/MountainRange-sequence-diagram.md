@@ -36,16 +36,29 @@ activate main
 
 %% Initialize MountainRange
 note over main,MR: Construct MountainRange
-
 main->>+MR: constructor(infile)
-    %% Read from external file
-    MR->>BIO: try_read_bytes() [ndims]
-    MR->>BIO: try_read_bytes() [cells]
-    MR->>BIO: try_read_bytes() [t]
-    MR->>BIO: try_read_bytes() [r]
-    MR->>BIO: try_read_bytes() [h]
 
-    MR->>MR: step(0)
+    %% Call protected instructor
+    MR->>+MR: constructor(istream)
+        %% Read from external file
+        note right of MR: Execution order is determined by<br> variable declaration order, not <br> order presented in initialization.
+        MR->>BIO: try_read_bytes() [ndims]
+        MR->>BIO: try_read_bytes() [cells]
+        MR->>BIO: try_read_bytes() [t]
+        MR->>BIO: try_read_bytes() [r]
+        MR->>BIO: try_read_bytes() [h]
+
+        MR->>MR: step(0)
+    MR-->>-MR: MountainRange
+    %% End protected constructor
+
+    %% Gracefully report errors
+    break IO/filesystem error
+        MR-->>MR: handle_read_failure(filename)
+        MR--xcout: throw logic_error("Failed to read from " + filename)
+    end
+    %% End error handling
+
 MR-->>-main: MountainRange
 %% End construct MountainRange
 
@@ -70,11 +83,8 @@ main->>+MR: solve()
         %% Optionally checkpoint
         opt should_perform_checkpoint()
             %% Write the current MountainRange state to a file
-            MR->>+MR: write(checkpoint_file_name)
-                MR->>BIO: try_write_bytes() [ndims, cells, t]
-                MR->>BIO: try_write_bytes() [r]
-                MR->>BIO: try_write_bytes() [h]
-            MR-->>-MR: void
+            MR->>MR: write(checkpoint_file_name)
+            note right of MR: Save to file, <br> same as below.
         end
         %% End checkpoint
 
@@ -97,6 +107,13 @@ main->>+MR: write(outfile)
     MR->>BIO: try_write_bytes() [ndims, cells, t]
     MR->>BIO: try_write_bytes() [r]
     MR->>BIO: try_write_bytes() [h]
+
+    %% Gracefully report errors
+    break IO/filesystem error
+        MR-->>MR: handle_write_failure(filename)
+        MR--xcout: throw logic_error("Failed to write to " + filename)
+    end
+    %% End error handling
 MR-->>-main: void
 main->>cout: "Successfully wrote " << outfile
 %% End write
