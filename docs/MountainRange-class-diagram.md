@@ -12,8 +12,8 @@ class MountainRange {
     + double value_type
 
     %% Data storage parameters
-    # value_type default_dt
-    # size_t header_size
+    # value_type default_dt$
+    # size_t header_size$
     # size_type ndims
     # size_type cells
     # value_type t
@@ -39,18 +39,44 @@ class MountainRange {
     # handle_read_failure(filename)$
 
     %% Output
-    + write(filename) void const
+    + write(filename) void const*
 
     %% Solving
     # update_g_cell(i)
     # update_h_cell(i, dt)
     # ds_cell(i) const
+    + split_range(n, rank, size) std::range$
 
     - get_checkpoint_interval() value_type const
     - should_perform_checkpoint() bool const
 
-    + dsteepness() value_type const
-    + step(dt) value_type
+    + dsteepness() value_type const*
+    + step(dt) value_type*
     + solve(dt=default_dt) value_type
 }
+
+class MountainRangeThreaded {
+    %% New internal bookkeeping variables
+    - bool continue_iteration
+    - size_type nthreads
+    - std::barrier ds_barrier
+    - std::barrier step_barrier
+    - vector~std::jthread~ ds_workers
+    - vector~std::jthread~ step_workers
+    - atomic~value_type~ ds_aggregator
+
+    + looping_threadpool(thread_count, F)$
+    - this_thread_cell_range(tid) std::range
+    + std::string help_message$
+
+    %% Constructor & Destructor
+    + MountainRangeThreaded(...)
+    + ~MountainRangeThreaded()
+
+    %% Override methods
+    + dsteepness() value_type const
+    + step(dt) value_type
+}
+
+MountainRange <|-- MountainRangeThreaded
 ```
