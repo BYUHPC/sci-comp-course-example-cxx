@@ -65,6 +65,9 @@ MR-->>-main: MountainRange
 note over main,MR: Begin Solving
 main->>+MR: solve()
 
+    %% Prepare for checkpointing
+    MR->>MR: get_checkpoint_interval()
+
     %% Begin solve loop
     loop Until steepness < epsilon()
 
@@ -92,6 +95,10 @@ main->>+MR: solve()
             sw->>sw: arrive_and_wait()
         MR-->>-MR: void
         %% End step
+
+        %% Checkpoint
+        MR->>MR: checkpoint()
+        note right of MR: Base code performs <br>checkpointing.
 
         note over dw, sw: `while(F())` loop from looping_threadpool()<br>causes thread instances to be reused <br> between each computational iteration.
 

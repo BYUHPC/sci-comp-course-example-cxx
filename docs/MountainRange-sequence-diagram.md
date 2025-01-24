@@ -52,8 +52,11 @@ MR-->>-main: MountainRange
 %% Call Solve
 note over main,MR: Begin Solving
 main->>+MR: solve()
-    %% Begin solve loop
+
+    %% Prepare for checkpointing
     MR->>MR: get_checkpoint_interval()
+
+    %% Begin solve loop
     loop While dsteepness() > epsilon()
 
         %% Evaluate steepness

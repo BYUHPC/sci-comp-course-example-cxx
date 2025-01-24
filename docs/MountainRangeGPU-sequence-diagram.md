@@ -49,6 +49,9 @@ MR-->>-main: MountainRange
 note over main,MR: Begin Solving
 main->>+MR: solve()
 
+    %% Prepare for checkpointing
+    MR->>MR: get_checkpoint_interval()
+
     %% Begin solve loop
     loop Until steepness < epsilon()
 
@@ -142,6 +145,10 @@ main->>+MR: solve()
 
         MR-->>-MR: void
         %% End step
+
+        %% Checkpoint
+        MR->>MR: checkpoint()
+        note right of MR: Base code performs <br>checkpointing.
 
     end
     %% End solve loop
