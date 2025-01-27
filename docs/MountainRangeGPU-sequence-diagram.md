@@ -19,6 +19,11 @@ The code covered by this diagram exists in three separate example files:
 * [MountainRange.hpp](../src/MountainRange.hpp) (base class)
 * [mountainsolve.cpp](../src/mountainsolve.cpp) (driver code)
 
+## Videos
+
+- 🎥 [MountainRange GPU — Sequence Diagram](https://www.loom.com/share/d3244e3918014ab39ef6e6895dfdbf41?sid=01f90e76-d915-488b-8850-15820a3c603d)
+- 🎥 [MountainRange GPU — Code Walkthrough](https://www.loom.com/share/b91ab38c20f3493eb6c34f00e82d35d1?sid=2ae8b8f0-029b-4ba8-bef7-8ea52a807bc4)
+
 ## Diagram
 
 ```mermaid
