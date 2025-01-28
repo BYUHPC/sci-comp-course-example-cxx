@@ -10,9 +10,9 @@
 This [sequence diagram](https://mermaid.js.org/syntax/sequenceDiagram.html#sequence-diagrams) written with Mermaid visually represents
 the calls and work being performed in the `MountainRangeGPU` example.
 
-It is designed to help visualize the relationships between
-the various entities involved in running the program. The close reader will observe stacked activation functions representing calls
-to methods on the base or subclass of the `MountainRange` object.
+It is designed to help visualize the interactions between the CPU and the GPU which are mostly handled automatically by the compiler.
+Due to the unique nature of memory management required by GPUs, an emphasis is placed on the movement of data during computation.
+Operations already defined in the base `MountainRange` class are simplified or omitted in this diagram.
 
 The code covered by this diagram exists in three separate example files:
 * [MountainRangeGPU.hpp](../src/MountainRangeGPU.hpp) (sub-class)
@@ -48,6 +48,9 @@ MR-->>-main: MountainRange
 %% Call Solve
 note over main,MR: Begin Solving
 main->>+MR: solve()
+
+    %% Prepare for checkpointing
+    MR->>MR: get_checkpoint_interval()
 
     %% Begin solve loop
     loop Until steepness < epsilon()
@@ -142,6 +145,10 @@ main->>+MR: solve()
 
         MR-->>-MR: void
         %% End step
+
+        %% Checkpoint
+        MR->>MR: checkpoint()
+        note right of MR: Base code performs <br>checkpointing.
 
     end
     %% End solve loop

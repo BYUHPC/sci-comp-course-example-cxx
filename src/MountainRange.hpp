@@ -78,10 +78,6 @@ protected:
         throw std::logic_error("Input file is corrupt or multi-dimensional, which this implementation doesn't support");
     }
 
-    static void handle_wrong_file_size() {
-        throw std::logic_error("Input file appears to be corrupt");
-    }
-
     static void handle_write_failure(const char *const filename) {
         throw std::logic_error("Failed to write to " + std::string(filename));
     }

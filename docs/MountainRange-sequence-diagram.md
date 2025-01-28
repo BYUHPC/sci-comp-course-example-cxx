@@ -9,7 +9,9 @@
 
 This [sequence diagram](https://mermaid.js.org/syntax/sequenceDiagram.html#sequence-diagrams) written with Mermaid visually represents the calls and work being performed in the `MountainRange` example.
 
-It is designed to help visualize the relationships between the various entities involved in running the program. This diagram emphasizes the new requirements and behaviors being added in Phase 2. Compare against the [MountainRange (simplified) sequence diagram](./MountainRange-simplified-sequence-diagram.md).
+It is designed to help visualize the new behaviors required in Phase 2 relating to file IO and checkpointing.
+While this diagram merely illustrates the difference, the code may evolve to hold all the code in a single file, or separate the concerns into two separate files.
+Compare against the [MountainRange (simplified) sequence diagram](./MountainRange-simplified-sequence-diagram.md).
 
 The code covered by this diagram exists in two separate example files:
 * [MountainRange.hpp](../src/MountainRange.hpp) (base class)
@@ -34,24 +36,40 @@ activate main
 
 %% Initialize MountainRange
 note over main,MR: Construct MountainRange
-
 main->>+MR: constructor(infile)
-    %% Read from external file
-    MR->>BIO: try_read_bytes() [ndims]
-    MR->>BIO: try_read_bytes() [cells]
-    MR->>BIO: try_read_bytes() [t]
-    MR->>BIO: try_read_bytes() [r]
-    MR->>BIO: try_read_bytes() [h]
 
-    MR->>MR: step(0)
+    %% Call protected instructor
+    MR->>+MR: constructor(istream)
+        %% Read from external file
+        note right of MR: Execution order is determined by<br> variable declaration order, not <br> order presented in initialization.
+        MR->>BIO: try_read_bytes() [ndims]
+        MR->>BIO: try_read_bytes() [cells]
+        MR->>BIO: try_read_bytes() [t]
+        MR->>BIO: try_read_bytes() [r]
+        MR->>BIO: try_read_bytes() [h]
+
+        MR->>MR: step(0)
+    MR-->>-MR: MountainRange
+    %% End protected constructor
+
+    %% Gracefully report errors
+    break IO/filesystem error
+        MR-->>MR: handle_read_failure(filename)
+        MR--xcout: throw logic_error("Failed to read from " + filename)
+    end
+    %% End error handling
+
 MR-->>-main: MountainRange
 %% End construct MountainRange
 
 %% Call Solve
 note over main,MR: Begin Solving
 main->>+MR: solve()
-    %% Begin solve loop
+
+    %% Prepare for checkpointing
     MR->>MR: get_checkpoint_interval()
+
+    %% Begin solve loop
     loop While dsteepness() > epsilon()
 
         %% Evaluate steepness
@@ -65,11 +83,8 @@ main->>+MR: solve()
         %% Optionally checkpoint
         opt should_perform_checkpoint()
             %% Write the current MountainRange state to a file
-            MR->>+MR: write(checkpoint_file_name)
-                MR->>BIO: try_write_bytes() [ndims, cells, t]
-                MR->>BIO: try_write_bytes() [r]
-                MR->>BIO: try_write_bytes() [h]
-            MR-->>-MR: void
+            MR->>MR: write(checkpoint_file_name)
+            note right of MR: Save to file, <br> same as below.
         end
         %% End checkpoint
 
@@ -92,6 +107,13 @@ main->>+MR: write(outfile)
     MR->>BIO: try_write_bytes() [ndims, cells, t]
     MR->>BIO: try_write_bytes() [r]
     MR->>BIO: try_write_bytes() [h]
+
+    %% Gracefully report errors
+    break IO/filesystem error
+        MR-->>MR: handle_write_failure(filename)
+        MR--xcout: throw logic_error("Failed to write to " + filename)
+    end
+    %% End error handling
 MR-->>-main: void
 main->>cout: "Successfully wrote " << outfile
 %% End write
