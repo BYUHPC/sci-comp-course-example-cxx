@@ -19,6 +19,11 @@ The code covered by this diagram exists in three separate example files:
 * [MountainRange.hpp](../src/MountainRange.hpp) (base class)
 * [mountainsolve.cpp](../src/mountainsolve.cpp) (driver code)
 
+## Videos
+
+- 🎥 [MountainRange Threaded — Sequence Diagram](https://www.loom.com/share/ad240327395f4ef68f75c9c32c50c835?sid=ef2cc2f0-1db8-4e69-9495-c2baa981a82a)
+- 🎥 [MountainRange Threaded — Code Walkthrough](https://www.loom.com/share/021c71412297432db68243200bea0039?sid=df34de3b-7386-45df-8fee-a427d7dfd2f6)
+
 ## Diagram
 
 ```mermaid

@@ -19,6 +19,14 @@ The code covered by this diagram exists in two separate example files:
 * [MountainRange.hpp](../src/MountainRange.hpp) (base class)
 * [initial.cpp](../src/initial.cpp) (driver code)
 
+<!-- I'm waiting to record these videos until we have finalized the form of this "simplified" file -->
+<!--
+## Videos
+
+- 🎥 [MountainRange Simplified — Sequence Diagram]()
+- 🎥 [MountainRange Simplified — Code Walkthrough]()
+-->
+
 ## Diagram
 
 ```mermaid
