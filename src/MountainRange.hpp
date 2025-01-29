@@ -38,6 +38,7 @@ namespace mr {
 
 // Base MountainRange. Derived classes can override write, dsteepness, and step.
 class MountainRange {
+
 public:
     using size_type  = size_t;
     using value_type = double;
@@ -164,7 +165,7 @@ protected:
 
 private:
     // Read checkpoint interval from environment
-    value_type get_checkpoint_interval() {
+    value_type get_checkpoint_interval() const {
         value_type checkpoint_interval = 0;
         auto INTVL = std::getenv("INTVL");
         if (INTVL != nullptr) std::from_chars(INTVL, INTVL+std::strlen(INTVL), checkpoint_interval);
@@ -172,14 +173,14 @@ private:
     }
 
     // Determine if a checkpoint should occur on this iteration
-    constexpr short should_perform_checkpoint(auto checkpoint_interval, auto dt) const {
+    constexpr bool should_perform_checkpoint(auto checkpoint_interval, auto dt) const {
         return checkpoint_interval > 0 && fmod(t+dt/5, checkpoint_interval) < 2*dt/5;
     }
 
 
 public:
     // Calculate the steepness derivative
-    virtual value_type dsteepness() {
+    virtual value_type dsteepness() const {
         value_type ds = 0;
         #pragma omp parallel for reduction(+:ds)
         for (size_t i=1; i<h.size()-1; i++) ds += ds_cell(i);
