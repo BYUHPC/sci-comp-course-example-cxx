@@ -1,5 +1,17 @@
 # Mountain Range — Class Diagram
 
+## Legend
+
+| Item | Meaning |
+| :-----: | :------------- |
+| `+` | Access modifier. **Public** visibility. |
+| `#` | Access modifier. **Protected** visibility. |
+| `-` | Access modifier. **Private** visibility. |
+| <ins>underline</ins> | `static` method/attribute |
+| <i>italics</u> | `virtual` method that can be overwritten. <br>_Note: This is a deviation from standard UML <br>which uses underline to signal `abstract`._ |
+
+## Diagram
+
 ```mermaid
 ---
 title: Mountain Range — Class Diagram
