@@ -4,11 +4,12 @@
 
 | Item | Meaning |
 | :-----: | :------------- |
-| `+` | Access modifier. **Public** visibility. |
-| `#` | Access modifier. **Protected** visibility. |
-| `-` | Access modifier. **Private** visibility. |
+| `+` | **Public** visibility (access modifier) |
+| `#` | **Protected** visibility (access modifier) |
+| `-` | **Private** visibility (access modifier) |
 | <ins>underline</ins> | `static` method/attribute |
-| <i>italics</u> | `virtual` method that can be overwritten. <br>_Note: This is a deviation from standard UML <br>which uses underline to signal `abstract`._ |
+| <i>italics</u> | `virtual` method that can be overwritten <br>_Note: This is a deviation from standard UML <br>which uses underline to signal `abstract`._ |
+| `const` | Methods: Calling the function does not change the state of any attributes <br>Attributes: The value will never change after assignment |
 
 ## Diagram
 
