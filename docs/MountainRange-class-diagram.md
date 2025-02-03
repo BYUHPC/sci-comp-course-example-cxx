@@ -15,6 +15,7 @@ from the base class as much as possible while sub-classes provide _only_ the new
 functionality associated with its particular objective.
 
 The code covered by this diagram exists in five separate example files:
+* [initial.cpp](../src/initial.cpp) (driver code | initial)
 * [mountainsolve.cpp](../src/mountainsolve.cpp) (driver code)
 * [MountainRange.hpp](../src/MountainRange.hpp) (base class)
 * [MountainRangeThreaded.hpp](../src/MountainRangeThreaded.hpp) (sub-class)
@@ -51,7 +52,19 @@ title: Mountain Range — Class Diagram
 classDiagram
 direction LR
 
-class MountainRangeSimplified["MountainRange (Simplified)"]
+namespace Initial {
+    class InitialMain["initial.cpp"]
+    class MountainRangeSimplified["MountainRange (Simplified)"]
+}
+
+class InitialMain {
+    - size_t len
+    - size_t plateau_start, plateau_end
+    - vector~double~ r, h
+    - MountainRangeSimplified m
+}
+
+
 class MountainRangeSimplified {
     %% Global type variables (readability + mutability)
     + size_t size_type
@@ -86,6 +99,19 @@ class MountainRangeSimplified {
     + solve(dt=default_dt) value_type
 }
 
+namespace WithIO {
+    class MountainSolve["mountainsolve.cpp"]
+    class MountainRange
+}
+
+class MountainSolve {
+    + print(...)
+    - help()
+    - char* infile
+    - char* outfile
+    - MtnRange m
+}
+    
 class MountainRange {
     %% Constructors
     # MountainRange(ndims, cells, t, r, h)
@@ -168,7 +194,16 @@ class MountainRangeMPI {
     - exchange_halos(x) void
 }
 
+%% Main classes
+InitialMain : main()
+MountainSolve : main()
+
 %% Relationships
+
+%%InitialMain ..> MountainRangeSimplified
+%%MountainSolve ..> MountainRange
+InitialMain .. MountainSolve
+
 MountainRangeSimplified --> MountainRange
 MountainRange <|-- MountainRangeThreaded
 MountainRange <|-- MountainRangeGPU
