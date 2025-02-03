@@ -1,5 +1,26 @@
 # Mountain Range — Class Diagram
 
+> [!IMPORTANT]
+> This diagram relies on [Mermaid diagrams](https://mermaid.js.org/) which display properly when rendered within GitHub.
+>
+> It may not work properly when rendered within other websites. [Click here to view the source](https://github.com/BYUHPC/sci-comp-course-example-cxx/blob/main/docs/MountainRange-class-diagram.md).
+
+## Intro
+
+This [class diagram](https://mermaid.js.org/syntax/classDiagram.html#class-diagrams) written with Mermaid visually represents
+the relationships between classes which offer multiple computational approaches to the `MountainRange`.
+
+It is designed to emphasize the role of **inheritance** in sharing/overriding code
+from the base class as much as possible while sub-classes provide _only_ the new 
+functionality associated with its particular objective.
+
+The code covered by this diagram exists in five separate example files:
+* [mountainsolve.cpp](../src/mountainsolve.cpp) (driver code)
+* [MountainRange.hpp](../src/MountainRange.hpp) (base class)
+* [MountainRangeThreaded.hpp](../src/MountainRangeThreaded.hpp) (sub-class)
+* [MountainRangeMPI.hpp](../src/MountainRangeMPI.hpp) (sub-class)
+* [MountainRangeGPU.hpp](../src/MountainRangeGPU.hpp) (sub-class)
+
 ## Legend
 
 | Item | Meaning |
@@ -122,7 +143,7 @@ class MountainRangeMPI {
     %% These are unique to each worker since each is in a separate process
     - mpl::communicator comm_world$
     - int comm_rank$
-    - nt comm_size$
+    - int comm_size$
 
     %% Constructors
     - MountainRangeMPI(mpl::file)
