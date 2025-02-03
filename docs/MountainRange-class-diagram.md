@@ -21,6 +21,16 @@ The code covered by this diagram exists in five separate example files:
 * [MountainRangeMPI.hpp](../src/MountainRangeMPI.hpp) (sub-class)
 * [MountainRangeGPU.hpp](../src/MountainRangeGPU.hpp) (sub-class)
 
+## Inheritance
+
+Inheritance allows a base class to define common functionality that multiple specialized sub-classes can extend or override as needed. This approach reduces code duplication and makes it easier to experiment with different computational methods while maintaining a consistent interface.
+
+See these resources to learn more about inheritance:
+* [Inheritance in C++ | GeeksForGeeks](https://www.geeksforgeeks.org/inheritance-in-c/)
+* [Inheritance in C++ | Simplilearn](https://www.simplilearn.com/tutorials/cpp-tutorial/types-of-inheritance-in-cpp)
+* [Virtual functions | IBM](https://www.ibm.com/docs/en/zos/3.1.0?topic=only-virtual-functions-c)
+* [C++ Virtual Functions and Function Overriding | Programiz](https://www.programiz.com/cpp-programming/virtual-functions)
+
 ## Legend
 
 | Item | Meaning |
