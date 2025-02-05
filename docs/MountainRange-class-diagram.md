@@ -22,6 +22,11 @@ The code covered by this diagram exists in five separate example files:
 * [MountainRangeMPI.hpp](../src/MountainRangeMPI.hpp) (sub-class)
 * [MountainRangeGPU.hpp](../src/MountainRangeGPU.hpp) (sub-class)
 
+## Videos
+
+- 🎥 [MountainRange — Class Diagram](https://www.loom.com/share/8280654f78754a16902ecd3c9b2c9128?sid=5c193f4c-ae6f-49bb-9c9f-914db2833183)
+- 🎥 [MountainRange — Code Walkthrough](https://www.loom.com/share/2e5242942ca74d17b85ce05f97138e60?sid=3d91e827-d55a-44d4-bfc8-58adff1cbac5)
+
 ## Inheritance
 
 Inheritance allows a base class to define common functionality that multiple specialized sub-classes can extend or override as needed. This approach reduces code duplication and makes it easier to experiment with different computational methods while maintaining a consistent interface.
