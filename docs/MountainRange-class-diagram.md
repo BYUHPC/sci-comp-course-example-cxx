@@ -208,9 +208,9 @@ MountainSolve : main()
 
 %%InitialMain ..> MountainRangeBasic
 %%MountainSolve ..> MountainRange
-InitialMain .. MountainSolve
+InitialMain ..> MountainSolve : Replaced by
 
-MountainRangeBasic --> MountainRange : Evolves into, OR\nremains separate
+MountainRangeBasic --> MountainRange : Evolves into, OR<br>remains separate
 MountainRange <|-- MountainRangeThreaded
 MountainRange <|-- MountainRangeGPU
 MountainRange <|-- MountainRangeMPI
