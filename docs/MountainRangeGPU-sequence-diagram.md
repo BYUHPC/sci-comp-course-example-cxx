@@ -1,7 +1,7 @@
 # Mountain Range GPU — Sequence Diagram
 
 > [!IMPORTANT]
-> This diagram relies on [Mermaid diagrams](https://mermaid.js.org/) which displays properly when rendered within GitHub.
+> This diagram relies on [Mermaid diagrams](https://mermaid.js.org/) which display properly when rendered within GitHub.
 >
 > It may not work properly when rendered within other websites. [Click here to view the source](https://github.com/BYUHPC/sci-comp-course-example-cxx/blob/main/docs/MountainRangeGPU-sequence-diagram.md).
 
