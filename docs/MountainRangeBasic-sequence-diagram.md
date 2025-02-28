@@ -7,25 +7,37 @@
 
 ## Intro
 
-This [sequence diagram](https://mermaid.js.org/syntax/sequenceDiagram.html#sequence-diagrams) written with Mermaid visually represents the calls and work being performed in the `MountainRange` example.
+This [sequence diagram](https://mermaid.js.org/syntax/sequenceDiagram.html#sequence-diagrams) written with Mermaid visually represents
+the calls and work being performed in the `MountainRange` example.
 
-It is designed to help visualize the relationships between the various entities involved in running the program.
+It is designed to help visualize the relationships between
+the various entities involved in running the program.
+The close reader will observe stacked activation functions representing calls
+to methods on the base or subclass of the `MountainRange` object.
 
 The code covered by this diagram exists in two separate example files:
 * [MountainRangeBasic.hpp](../src/MountainRangeBasic.hpp) (base class)
 * [initial.cpp](../src/initial.cpp) (driver code)
 
+<!-- I'm waiting to record these videos until we have finalized the form of this file -->
+<!--
+## Videos
+
+- 🎥 [MountainRangeBasic — Sequence Diagram]()
+- 🎥 [MountainRangeBasic — Code Walkthrough]()
+-->
+
 ## Diagram
 
 ```mermaid
 ---
-title: Mountain Range — Sequence Diagram
+title: Mountain Range Basic — Sequence Diagram
 ---
 
 sequenceDiagram
 
 participant main
-participant MR as MountainRangeBasic
+participant MR as MountainRange
 participant cout as std::cout
 
 note left of main: Program starts
@@ -44,39 +56,49 @@ MR-->>-main: MountainRange
 %% Call Solve
 note over main,MR: Begin Solving
 main->>+MR: solve()
+
+    %% Begin solve loop
     loop While dsteepness() > epsilon()
-        
+
         %% Evaluate steepness
         MR->>+MR: dsteepness()
             loop for cell in interior cells
                 MR->>MR: ds_cell(cell)
             end
         MR-->>-MR: total energy
-        
+        %% End steepness calculation
+
         %% Perform step
         MR->>+MR: step()
-            %% Modify h cells
+
+            %% Update h cells
             loop for cell in cells
                 MR->>MR: update_h_cell(cell)
             end
+            %% End update h cells
 
-            %% Modify g cells
+            %% Update g cells
             loop for cell in interior cells
                 MR->>MR: update_g_cell(cell)
             end
+            %% End update g cells
 
             %% Update other state variables
             note right of MR: Update other state variables
+
         MR-->>-MR: void
-    
+        %% End step
+
     end
+    %% End solve loop
+
 MR-->>-main: t
 %% End solve
 
 %% Print result
 note over main,MR: Print Result
 main->>cout: t << std::endl
-%% end print
+%% End print
 
 note left of main: Program exits
 deactivate main
