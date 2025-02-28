@@ -17,6 +17,7 @@ functionality associated with its particular objective.
 The code covered by this diagram exists in five separate example files:
 * [initial.cpp](../src/initial.cpp) (driver code | initial)
 * [mountainsolve.cpp](../src/mountainsolve.cpp) (driver code)
+* [MountainRangeBasic.hpp](../src/MountainRangeBasic.hpp) (simple class)
 * [MountainRange.hpp](../src/MountainRange.hpp) (base class)
 * [MountainRangeThreaded.hpp](../src/MountainRangeThreaded.hpp) (sub-class)
 * [MountainRangeMPI.hpp](../src/MountainRangeMPI.hpp) (sub-class)
@@ -59,18 +60,18 @@ direction LR
 
 namespace Initial {
     class InitialMain["initial.cpp"]
-    class MountainRangeSimplified["MountainRange (Simplified)"]
+    class MountainRangeBasic
 }
 
 class InitialMain {
     - size_t len
     - size_t plateau_start, plateau_end
     - vector~double~ r, h
-    - MountainRangeSimplified m
+    - MountainRangeBasic m
 }
 
 
-class MountainRangeSimplified {
+class MountainRangeBasic {
     %% Global type variables (readability + mutability)
     + size_t size_type
     + double value_type
@@ -205,11 +206,11 @@ MountainSolve : main()
 
 %% Relationships
 
-%%InitialMain ..> MountainRangeSimplified
+%%InitialMain ..> MountainRangeBasic
 %%MountainSolve ..> MountainRange
 InitialMain .. MountainSolve
 
-MountainRangeSimplified --> MountainRange
+MountainRangeBasic --> MountainRange : Evolves into
 MountainRange <|-- MountainRangeThreaded
 MountainRange <|-- MountainRangeGPU
 MountainRange <|-- MountainRangeMPI

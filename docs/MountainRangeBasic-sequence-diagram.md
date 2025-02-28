@@ -37,7 +37,7 @@ title: Mountain Range Basic — Sequence Diagram
 sequenceDiagram
 
 participant main
-participant MR as MountainRange
+participant MR as MountainRangeBasic
 participant cout as std::cout
 
 note left of main: Program starts
