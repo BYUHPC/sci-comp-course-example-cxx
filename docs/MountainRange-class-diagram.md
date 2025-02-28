@@ -16,8 +16,8 @@ functionality associated with its particular objective.
 
 The code covered by this diagram exists in five separate example files:
 * [initial.cpp](../src/initial.cpp) (driver code | initial)
+* [MountainRangeBasic.hpp](../src/MountainRangeBasic.hpp) (simple class | initial)
 * [mountainsolve.cpp](../src/mountainsolve.cpp) (driver code)
-* [MountainRangeBasic.hpp](../src/MountainRangeBasic.hpp) (simple class)
 * [MountainRange.hpp](../src/MountainRange.hpp) (base class)
 * [MountainRangeThreaded.hpp](../src/MountainRangeThreaded.hpp) (sub-class)
 * [MountainRangeMPI.hpp](../src/MountainRangeMPI.hpp) (sub-class)
@@ -210,7 +210,7 @@ MountainSolve : main()
 %%MountainSolve ..> MountainRange
 InitialMain .. MountainSolve
 
-MountainRangeBasic --> MountainRange : Evolves into
+MountainRangeBasic --> MountainRange : Evolves into, OR\nremains separate
 MountainRange <|-- MountainRangeThreaded
 MountainRange <|-- MountainRangeGPU
 MountainRange <|-- MountainRangeMPI
