@@ -1,7 +1,7 @@
 # Mountain Range — Class Diagram
 
 > [!IMPORTANT]
-> This diagram relies on [Mermaid diagrams](https://mermaid.js.org/) which display properly when rendered within GitHub.
+> This diagram relies on [Mermaid diagrams](https://mermaid.js.org/) which displays properly when rendered within GitHub.
 >
 > It may not work properly when rendered within other websites. [Click here to view the source](https://github.com/BYUHPC/sci-comp-course-example-cxx/blob/main/docs/MountainRange-class-diagram.md).
 
@@ -11,7 +11,7 @@ This [class diagram](https://mermaid.js.org/syntax/classDiagram.html#class-diagr
 the relationships between classes which offer multiple computational approaches to the `MountainRange`.
 
 It is designed to emphasize the role of **inheritance** in sharing/overriding code
-from the base class as much as possible while sub-classes provide _only_ the new 
+from the base class as much as possible while sub-classes provide _only_ the new
 functionality associated with its particular objective.
 
 The code covered by this diagram exists in five separate example files:
@@ -116,7 +116,7 @@ class MountainSolve {
     - char* outfile
     - MtnRange m
 }
-    
+
 class MountainRange {
     %% Constructors
     # MountainRange(ndims, cells, t, r, h)
