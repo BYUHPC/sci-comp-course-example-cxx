@@ -38,6 +38,7 @@ namespace mr {
 
 // Base MountainRange. Derived classes can override write, dsteepness, and step.
 class MountainRange {
+
 public:
     using size_type  = size_t;
     using value_type = double;
@@ -76,10 +77,6 @@ protected:
     // Error handlers for I/O constructors
     static void handle_wrong_dimensions() {
         throw std::logic_error("Input file is corrupt or multi-dimensional, which this implementation doesn't support");
-    }
-
-    static void handle_wrong_file_size() {
-        throw std::logic_error("Input file appears to be corrupt");
     }
 
     static void handle_write_failure(const char *const filename) {
@@ -166,11 +163,24 @@ protected:
         return ((h[i-1] - h[i+1]) * (g[i-1] - g[i+1])) / 2 / (cells - 2);
     }
 
+private:
+    // Read checkpoint interval from environment
+    value_type get_checkpoint_interval() const {
+        value_type checkpoint_interval = 0;
+        auto INTVL = std::getenv("INTVL");
+        if (INTVL != nullptr) std::from_chars(INTVL, INTVL+std::strlen(INTVL), checkpoint_interval);
+        return checkpoint_interval;
+    }
+
+    // Determine if a checkpoint should occur on this iteration
+    constexpr bool should_perform_checkpoint(auto checkpoint_interval, auto dt) const {
+        return checkpoint_interval > 0 && fmod(t+dt/5, checkpoint_interval) < 2*dt/5;
+    }
 
 
 public:
     // Calculate the steepness derivative
-    virtual value_type dsteepness() {
+    virtual value_type dsteepness() const {
         value_type ds = 0;
         #pragma omp parallel for reduction(+:ds)
         for (size_t i=1; i<h.size()-1; i++) ds += ds_cell(i);
@@ -202,17 +212,14 @@ public:
 
     // Step until dsteepness() falls below 0, checkpointing along the way
     value_type solve(value_type dt=default_dt) {
-        // Read checkpoint interval from environment
-        value_type checkpoint_interval = 0;
-        auto INTVL = std::getenv("INTVL");
-        if (INTVL != nullptr) std::from_chars(INTVL, INTVL+std::strlen(INTVL), checkpoint_interval);
+        auto checkpoint_interval = get_checkpoint_interval();
 
         // Solve loop
         while (dsteepness() > std::numeric_limits<value_type>::epsilon()) {
             step(dt);
 
             // Checkpoint if requested
-            if (checkpoint_interval > 0 && fmod(t+dt/5, checkpoint_interval) < 2*dt/5) {
+            if (should_perform_checkpoint(checkpoint_interval, dt)) {
                 auto check_file_name = std::format("chk-{:07.2f}.wo", t).c_str();
                 write(check_file_name);
             }

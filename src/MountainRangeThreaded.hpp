@@ -29,6 +29,8 @@ namespace {
 
 
 class MountainRangeThreaded: public MountainRange {
+
+private:
     // Threading-related members
     bool continue_iteration; // used to tell the looping threadpool to terminate at the end of the simulation
     const size_type nthreads;
@@ -104,15 +106,15 @@ public:
 
 
     // Steepness derivative
-    value_type dsteepness() override {
+    value_type dsteepness() const override {
         // Reset reduction destination
         ds_aggregator = 0;
-        
+
         // Launch workers
         ds_barrier.arrive_and_wait();
 
         // Wait for workers to finish this iteration
-        ds_barrier.arrive_and_wait(); 
+        ds_barrier.arrive_and_wait();
 
         return ds_aggregator;
     }
