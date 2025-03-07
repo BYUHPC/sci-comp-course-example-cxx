@@ -11,11 +11,12 @@ This [class diagram](https://mermaid.js.org/syntax/classDiagram.html#class-diagr
 the relationships between classes which offer multiple computational approaches to the `MountainRange`.
 
 It is designed to emphasize the role of **inheritance** in sharing/overriding code
-from the base class as much as possible while sub-classes provide _only_ the new 
+from the base class as much as possible while sub-classes provide _only_ the new
 functionality associated with its particular objective.
 
 The code covered by this diagram exists in five separate example files:
 * [initial.cpp](../src/initial.cpp) (driver code | initial)
+* [MountainRangeBasic.hpp](../src/MountainRangeBasic.hpp) (simple class | initial)
 * [mountainsolve.cpp](../src/mountainsolve.cpp) (driver code)
 * [MountainRange.hpp](../src/MountainRange.hpp) (base class)
 * [MountainRangeThreaded.hpp](../src/MountainRangeThreaded.hpp) (sub-class)
@@ -59,18 +60,18 @@ direction LR
 
 namespace Initial {
     class InitialMain["initial.cpp"]
-    class MountainRangeSimplified["MountainRange (Simplified)"]
+    class MountainRangeBasic
 }
 
 class InitialMain {
     - size_t len
     - size_t plateau_start, plateau_end
     - vector~double~ r, h
-    - MountainRangeSimplified m
+    - MountainRangeBasic m
 }
 
 
-class MountainRangeSimplified {
+class MountainRangeBasic {
     %% Global type variables (readability + mutability)
     + size_t size_type
     + double value_type
@@ -116,7 +117,7 @@ class MountainSolve {
     - char* outfile
     - MtnRange m
 }
-    
+
 class MountainRange {
     %% Constructors
     # MountainRange(ndims, cells, t, r, h)
@@ -205,11 +206,11 @@ MountainSolve : main()
 
 %% Relationships
 
-%%InitialMain ..> MountainRangeSimplified
+%%InitialMain ..> MountainRangeBasic
 %%MountainSolve ..> MountainRange
-InitialMain .. MountainSolve
+InitialMain ..> MountainSolve : Replaced by
 
-MountainRangeSimplified --> MountainRange
+MountainRangeBasic --> MountainRange : Evolves into, OR<br>remains separate
 MountainRange <|-- MountainRangeThreaded
 MountainRange <|-- MountainRangeGPU
 MountainRange <|-- MountainRangeMPI

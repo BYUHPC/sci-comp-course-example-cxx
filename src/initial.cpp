@@ -1,12 +1,9 @@
 #include <vector>
 #include <iostream>
-#include "MountainRange.hpp"
-
+#include "MountainRangeBasic.hpp"
 
 
 // Run a basic mountain range simulation and print its simulation time
-
-
 
 int main() {
     // Simulation parameters
@@ -18,7 +15,7 @@ int main() {
     std::vector<decltype(value)> r(len), h(len);
     std::fill(r.begin()+plateau_start, r.begin()+plateau_end, value);
     h[0] = 1;
-    auto m = MountainRange(r, h);
+    auto m = MountainRangeBasic(r, h);
 
     // Solve and return
     std::cout << m.solve() << std::endl;
