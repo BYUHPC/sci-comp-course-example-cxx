@@ -11,7 +11,7 @@ This [sequence diagram](https://mermaid.js.org/syntax/sequenceDiagram.html#seque
 
 It is designed to help visualize the new behaviors required in Phase 2 relating to file IO and checkpointing.
 While this diagram merely illustrates the difference, the code may evolve to hold all the code in a single file, or separate the concerns into two separate files.
-Compare against the [MountainRange (simplified) sequence diagram](./MountainRange-simplified-sequence-diagram.md).
+Compare against the [MountainRangeBasic sequence diagram](./MountainRangeBasic-sequence-diagram.md).
 
 The code covered by this diagram exists in two separate example files:
 * [MountainRange.hpp](../src/MountainRange.hpp) (base class)
