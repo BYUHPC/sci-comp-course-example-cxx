@@ -1,34 +1,34 @@
-# Mountain Range Threaded — Sequence Diagram
+# Mountain Range MPI — Sequence Diagram
 
 > [!IMPORTANT]
 > This diagram relies on [Mermaid diagrams](https://mermaid.js.org/) which display properly when rendered within GitHub.
 >
-> It may not work properly when rendered within other websites. [Click here to view the source](https://github.com/BYUHPC/sci-comp-course-example-cxx/blob/main/docs/MountainRangeThreaded-sequence-diagram.md).
+> It may not work properly when rendered within other websites. [Click here to view the source](https://github.com/BYUHPC/sci-comp-course-example-cxx/blob/main/docs/MountainRangeMPI-sequence-diagram.md).
 
 ## Intro
 
 This [sequence diagram](https://mermaid.js.org/syntax/sequenceDiagram.html#sequence-diagrams) written with Mermaid visually represents
-the calls and work being performed in the `MountainRangeThreaded` example.
+the calls and work being performed in the `MountainRangeMPI` example.
 
-It is designed to help visualize the new model of computation as work is divided among worker threads to occur in parallel.
-The details of thread creation, lifespan, and destruction have been carefully illustrated.
+It is designed to help visualize the new model of computation as work is divided among multiple independent processes on multiples nodes to computer in parallel.
+The logical coordination between each of the processes is illustrated, but the exact distribution of responsibilities between each process is not illustrated.
 Operations already defined in the base `MountainRange` class are simplified or omitted in this diagram.
 
 The code covered by this diagram exists in three separate example files:
-* [MountainRangeThreaded.hpp](../src/MountainRangeThreaded.hpp) (sub-class)
+* [MountainRangeMPI.hpp](../src/MountainRangeMPI.hpp) (sub-class)
 * [MountainRange.hpp](../src/MountainRange.hpp) (base class)
 * [mountainsolve.cpp](../src/mountainsolve.cpp) (driver code)
 
 ## Videos
 
-- 🎥 [MountainRange Threaded — Sequence Diagram](https://www.loom.com/share/ad240327395f4ef68f75c9c32c50c835?sid=ef2cc2f0-1db8-4e69-9495-c2baa981a82a)
-- 🎥 [MountainRange Threaded — Code Walkthrough](https://www.loom.com/share/021c71412297432db68243200bea0039?sid=df34de3b-7386-45df-8fee-a427d7dfd2f6)
+- 🎥 [MountainRange MPI — Sequence Diagram]()
+- 🎥 [MountainRange MPI — Code Walkthrough]()
 
 ## Diagram
 
 ```mermaid
 ---
-title: Mountain Range Threaded — Sequence Diagram
+title: Mountain Range MPI — Sequence Diagram
 ---
 
 sequenceDiagram
