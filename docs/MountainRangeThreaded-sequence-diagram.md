@@ -63,7 +63,7 @@ main->>+MR: constructor()
     MR-->>-MR: vector<jthread>
     %% End create sw workers
 
-MR-->>-main: MountainRange
+MR-->>-main: MountainRangeThreaded
 %% End construct MountainRange
 
 %% Call Solve
