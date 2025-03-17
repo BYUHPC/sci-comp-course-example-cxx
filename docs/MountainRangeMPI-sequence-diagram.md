@@ -34,36 +34,50 @@ title: Mountain Range MPI — Sequence Diagram
 sequenceDiagram
 
 participant main
-participant MR as MountainRange
+participant MR as MountainRange (Example)
+
+%% box Orange Node1
+%% participant MR1 as MountainRange1
+%% participant MR2 as MountainRanges 2...4
+%% end
+%% box Yellow Node2
+%% participant MR5 as MountainRange5
+%% participant MR6 as MountainRanges 6...8
+%% end
+
+
+
+participant file as MPL::file
 
 note left of main: Program starts
 activate main
 
 %% Construct MountainRange
-note over main,MR: Construct MountainRange
-main->>+MR: constructor()
+note over main,MR6: Construct MountainRanges (each process reads the entire wave)
+main->>+MR: constructor(char *filename)
+    note over file: File is opened for reading only
+    MR->>file: mpl::file(comm_world, filename, read_only)
+    MR->>+MR: constructor(mpl::file &&f)
 
-    note right of MR: Call parent constructor. <br> Read data from file.
+        MR->>file: read_at_all() [ndims]
+        MR->>file: read_at_all() [cells]
+        MR->>file: read_at_all() [t]
 
-    %% Create dw workers
-    MR->>+MR: looping_threadpool()
-    create participant dw as ds_workers (x8)
-    MR->>+dw: new jthread()
-    dw->>+dw: F()
-    dw->>dw: arrive_and_wait()
-    MR-->>-MR: vector<jthread>
-    %% End create dw workers
+        note right of MR: Call parent constructor<br> with minimal r and h vectors. <br>They will be resized later.
+        MR->>MR: MountainRange(ndims, cells, t, 3, 3)
 
-    %% Create sw workers
-    MR->>+MR: looping_threadpool()
-    create participant sw as step_workers (x8)
-    MR->>+sw: new jthread()
-    sw->>+sw: F()
-    sw->>sw: arrive_and_wait()
-    MR-->>-MR: vector<jthread>
-    %% End create sw workers
+        note right of MR: Determine responsible cell ranges. <br>Expand to include halo cells.
+        MR->>MR: this_process_cell_range()
 
-MR-->>-main: MountainRange
+        note right of MR: Read in only the cells that will be <br>needed by this process.
+        MR->>file: read_at(r_offset, r.data(), layout) [r]
+        MR->>file: read_at(h_offset, h.data(), layout) [h]
+
+        MR->>MR: step(0)
+
+    MR-->>-MR: MountainRangeMPI
+    note over file: File is closed
+MR-->>-main: MountainRangeMPI
 %% End construct MountainRange
 
 %% Call Solve
@@ -78,34 +92,17 @@ main->>+MR: solve()
 
         %% Evaluate steepness
         MR->>+MR: dsteepness()
-            MR->>MR: ds_aggregator = 0
-            MR--)dw: arrive_and_wait()
-            note over dw: Worker threads proceed<br>to do work and <br>store result in <br>`ds_aggregator`.
-            MR<<-->>dw: arrive_and_wait()
-            dw-->>-dw: true
-            dw->>+dw: F()
-            dw->>dw: arrive_and_wait()
         MR-->>-MR: ds_aggregator
         %% End steepness calculation
 
         %% Perform step
         MR->>+MR: step()
-            MR--)sw: arrive_and_wait()
-            note over sw: Worker threads proceed<br>to modify `h` cells.
-            MR<<-->>sw: arrive_and_wait()
-            note over sw: Worker threads proceed<br>to modify `g` cells.
-            MR<<-->>sw: arrive_and_wait()
-            sw-->>-sw: true
-            sw->>+sw: F()
-            sw->>sw: arrive_and_wait()
         MR-->>-MR: void
         %% End step
 
         %% Checkpoint
         MR->>MR: checkpoint()
         note right of MR: Base code performs <br>checkpointing.
-
-        note over dw, sw: `while(F())` loop from looping_threadpool()<br>causes thread instances to be reused <br> between each computational iteration.
 
     end
     %% End solve loop
@@ -123,22 +120,6 @@ MR-->>-main: void
 %% Destruct MountainRange
 note over main,MR: Destruct MountainRange
 main--x+MR: ~MountainRange()
-
-    %% Destruct dw workers
-    MR--)dw: arrive_and_wait()
-    dw-->>-dw: false
-    deactivate dw
-    destroy dw
-    MR--xdw: threads auto join and stop
-    %% End destruct dw workers
-
-    %% Destruct sw workers
-    MR--)sw: arrive_and_wait()
-    sw-->>-sw: false
-    deactivate sw
-    destroy sw
-    MR--xsw: threads auto join and stop
-    %% End destruct sw workers
 
 MR-->>-main: void
 destroy MR
