@@ -148,14 +148,6 @@ main->>+MR: write()
 MR-->>-main: void
 %% End write
 
-%% Destruct MountainRange
-note over main,MR: Destruct MountainRange
-main--x+MR: ~MountainRange()
-
-MR-->>-main: void
-destroy MR
-%% End destruct MountainRange
-
 note left of main: Program exits
 deactivate main
 ```
