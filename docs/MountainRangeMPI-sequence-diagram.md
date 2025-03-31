@@ -53,10 +53,11 @@ note left of main: Program starts
 activate main
 
 %% Construct MountainRange
-note over main,MR6: Construct MountainRanges (each process reads the entire wave)
+note over main,MR: Construct MountainRanges
+note over MR,MR6: Each process reads the entire header and its assigned cells
 main->>+MR: constructor(char *filename)
-    note over file: File is opened for reading only
-    MR->>file: mpl::file(comm_world, filename, read_only)
+    note over file: Open file for reading only
+    MR->>+file: mpl::file(comm_world, filename, read_only)
     MR->>+MR: constructor(mpl::file &&f)
 
         MR->>file: read_at_all() [ndims]
@@ -69,14 +70,22 @@ main->>+MR: constructor(char *filename)
         note right of MR: Determine responsible cell ranges. <br>Expand to include halo cells.
         MR->>MR: this_process_cell_range()
 
-        note right of MR: Read in only the cells that will be <br>needed by this process.
+        note right of MR: Resize data vectors. <br>Read in only the cells that will be <br>needed by this process.
         MR->>file: read_at(r_offset, r.data(), layout) [r]
         MR->>file: read_at(h_offset, h.data(), layout) [h]
 
         MR->>MR: step(0)
 
     MR-->>-MR: MountainRangeMPI
+
+    MR --x file: «passes out of scope»
+    deactivate file
     note over file: File is closed
+
+    break mpl::io_failure is thrown
+        MR->>MR: handle_read_failure(filename)
+    end
+
 MR-->>-main: MountainRangeMPI
 %% End construct MountainRange
 
@@ -112,8 +121,30 @@ MR-->>-main: t
 
 %% Call Write
 note over main,MR: Write Result
+note over MR,MR6: Each process writes the entire header and its assigned cells
 main->>+MR: write()
-note right of MR: Inherited method.<br>Write result to file.
+
+    note over file: Open file for creating & writing only
+    MR->>+file: mpl::file(comm_world, filename, create|write_only)
+
+    MR->>file: write_all(ndims)
+    MR->>file: write_all(cells)
+    MR->>file: write_all(t)
+
+    note right of MR: Determine where in the file our cells belong
+    MR->>MR: this_process_cell_range()
+
+    MR->>file: write_at(r_offset, r.data()+halo_offset, layout)
+    MR->>file: write_at(h_offset, h.data()+halo_offset, layout)
+
+    MR --x file: «passes out of scope»
+    deactivate file
+    note over file: File is closed
+
+    break mpl::io_failure is thrown
+        MR->>MR: handle_write_failure(filename)
+    end
+
 MR-->>-main: void
 %% End write
 
