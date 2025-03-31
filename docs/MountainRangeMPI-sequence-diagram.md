@@ -101,11 +101,51 @@ main->>+MR: solve()
 
         %% Evaluate steepness
         MR->>+MR: dsteepness()
-        MR-->>-MR: ds_aggregator
+
+            %% Locally sum all assigned cells
+            loop for cell in assigned, interior cells
+                MR->>MR: ds_cell(cell)
+            end
+
+            %% Reduce results together with other processes
+            note right of MR: MPL adds together all local values <br>and distributes the result to each process
+            MR <<->> MR6: comm_world.allreduce(plus, local_ds, global_ds)
+
+        MR-->>-MR: global_ds
         %% End steepness calculation
 
         %% Perform step
         MR->>+MR: step()
+            %% Setup range
+            MR->>MR: this_process_cell_range()
+
+
+            note right of MR: Iterate over all assigned cells <br>(all cells stored locally) <br> and
+            %% Update h cells
+            loop for cell in assigned cells
+                MR->>MR: update_h_cell(cell)
+            end
+            %% End update h cells
+
+            %% Update g cells
+            loop for cell in assigned, interior cells
+                MR->>MR: update_g_cell(cell)
+            end
+            %% End update g cells
+
+            %% Exchange halos with neighbors
+            MR->>+MR: exchange_halos(g)
+
+                MR->>MR: this_process_cell_range()
+
+                opt has left partner
+                    note right of MR: Send our first cell... TODO!
+                    MR <<->> MR6: comm_world.sendrecv()
+                end
+
+            MR-->-MR: void
+            %% End exchange_halos
+
         MR-->>-MR: void
         %% End step
 
