@@ -163,7 +163,7 @@ main->>+MR: solve()
 
         %% Checkpoint
         MR->>MR: checkpoint()
-        note right of MR: Base code performs <br>checkpointing.
+        note right of MR: Base code performs checkpointing. <br>It uses the overwritten write() <br> method diagrammed below.
 
     end
     %% End solve loop
