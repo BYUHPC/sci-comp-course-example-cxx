@@ -34,27 +34,17 @@ title: Mountain Range MPI — Sequence Diagram
 sequenceDiagram
 
 participant main
-participant MR as MountainRange (Example)
-
-%% box Orange Node1
-%% participant MR1 as MountainRange1
-%% participant MR2 as MountainRanges 2...4
-%% end
-%% box Yellow Node2
-%% participant MR5 as MountainRange5
-%% participant MR6 as MountainRanges 6...8
-%% end
-
-
-
+participant MR as MountainRange <br>(current process)
 participant file as MPL::file
+participant MRC as MountainRange <br>(process cluster)
+
 
 note left of main: Program starts
 activate main
 
 %% Construct MountainRange
 note over main,MR: Construct MountainRanges
-note over MR,MR6: Each process reads the entire header and its assigned cells
+note over MR,MRC: Each process reads the entire header and its assigned cells
 main->>+MR: constructor(char *filename)
     note over file: Open file for reading only
     MR->>+file: mpl::file(comm_world, filename, read_only)
@@ -109,7 +99,7 @@ main->>+MR: solve()
 
             %% Reduce results together with other processes
             note right of MR: MPL adds together all local values <br>and distributes the result to each process
-            MR <<->> MR6: comm_world.allreduce(plus, local_ds, global_ds)
+            MR <<->> MRC: comm_world.allreduce(plus, local_ds, global_ds)
 
         MR-->>-MR: global_ds
         %% End steepness calculation
@@ -133,24 +123,24 @@ main->>+MR: solve()
 
             %% Exchange halos with neighbors
             MR->>+MR: exchange_halos(g)
-                note over MR,MR6: Halo exchange occurs in two distinct phases: <br>1. Send all first real values LEFT to be the last halo <br>2. Send last real values RIGHT to be the first halo <br><br> Data is tagged with the direction it is travelling. <br><br>Most processes receive send to the direction,<br> and receive from the other dirction, <br> but the processes on the end only <br>perform ONE of these operations.
+                note over MR,MRC: Halo exchange occurs in two distinct phases: <br>1. Send all first real values LEFT to be the last halo <br>2. Send last real values RIGHT to be the first halo <br><br> Data is tagged with the direction it is travelling. <br><br>Most processes receive send to the direction,<br> and receive from the other dirction, <br> but the processes on the end only <br>perform ONE of these operations.
 
                 note right of MR: Send first real value leftwards
                 alt is leftmost process
-                    MR6->>MR: receive(..., leftward_tag)
+                    MRC->>MR: receive(..., leftward_tag)
                 else is middle process
-                    MR<<->>MR6: sendrecv(..., leftward_tag)
+                    MR<<->>MRC: sendrecv(..., leftward_tag)
                 else is rightmost process
-                    MR->>MR6: send(..., leftward_tag)
+                    MR->>MRC: send(..., leftward_tag)
                 end
 
                 note right of MR: Send last real value rightwards
                 alt is leftmost process
-                    MR6->>MR: send(..., rightward_tag)
+                    MRC->>MR: send(..., rightward_tag)
                 else is middle process
-                    MR<<->>MR6: sendrecv(..., rightward_tag)
+                    MR<<->>MRC: sendrecv(..., rightward_tag)
                 else is rightmost process
-                    MR->>MR6: recv(..., rightward_tag)
+                    MR->>MRC: recv(..., rightward_tag)
                 end
 
             MR-->-MR: void
@@ -171,7 +161,7 @@ MR-->>-main: t
 
 %% Call Write
 note over main,MR: Write Result
-note over MR,MR6: Each process writes the entire header and its assigned cells
+note over MR,MRC: Each process writes the entire header and its assigned cells
 main->>+MR: write()
 
     note over file: Open file for creating & writing only
