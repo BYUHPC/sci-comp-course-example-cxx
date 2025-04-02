@@ -142,20 +142,30 @@ private:
         const auto &last_real_cell  = x[x.size()-2];
 
         // Tags for sends and receives
-        auto left_tag  = mpl::tag_t{0}, right_tag = mpl::tag_t{1}; // direction of data flow is indicated
+        auto leftward_tag  = mpl::tag_t{0}, rightward_tag = mpl::tag_t{1}; // direction of data flow is indicated
 
         // Figure out where we are globally so we can know whether we need to send data
-        auto [global_first, global_last] = this_process_cell_range(); // https://tinyurl.com/byusc-structbind
+        bool is_first = (comm_rank == 0);
+        bool is_last  = (comm_rank == comm_size-1);
 
-        // Exchange halos with the process to the left if there is such a process
-        if (global_first > 0) {
-            comm_world.sendrecv(first_real_cell, comm_rank-1, left_tag,   // send
-                                first_halo,      comm_rank-1, right_tag); // receive
+        // Send first_real_cell leftwards to become the last_halo
+        if (is_last) {
+            comm_world.send(first_real_cell, comm_rank-1, leftward_tag);        // send only
+        } else if (is_first) {
+            comm_world.recv(last_halo, comm_rank+1, leftward_tag);              // receive only
+        } else {
+            comm_world.sendrecv(first_real_cell, comm_rank-1, leftward_tag,     // send
+                                last_halo,  comm_rank+1, leftward_tag);         // receive
         }
-        // Exchange halos with the process to the right if this process has a real end halo
-        if (global_last < cells) {
-            comm_world.sendrecv(last_real_cell,  comm_rank+1, right_tag,  // send
-                                last_halo,       comm_rank+1, left_tag);  // receive
+
+        // Send last_real_cell rightwards to become the first_halo
+        if (is_first) {
+            comm_world.send(last_real_cell, comm_rank+1, rightward_tag);        // send only
+        } else if (is_last) {
+            comm_world.recv(first_halo, comm_rank-1, rightward_tag);            // receive only
+        } else {
+            comm_world.sendrecv(last_real_cell,  comm_rank+1, rightward_tag,    // send
+                                first_halo,     comm_rank-1, rightward_tag);    // receive
         }
     }
 
