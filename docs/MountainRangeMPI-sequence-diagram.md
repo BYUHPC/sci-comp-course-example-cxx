@@ -135,12 +135,24 @@ main->>+MR: solve()
 
             %% Exchange halos with neighbors
             MR->>+MR: exchange_halos(g)
+                note over MR,MR6: Halo exchange occurs in two distinct phases: <br>1. Send all first real values LEFT to be the last halo <br>2. Send last real values RIGHT to be the first halo <br><br> Data is tagged with the direction it is travelling. <br><br>Most processes receive send to the direction,<br> and receive from the other dirction, <br> but the processes on the end only <br>perform ONE of these operations.
 
-                MR->>MR: this_process_cell_range()
+                note right of MR: Send first real value leftwards
+                alt is leftmost process
+                    MR6->>MR: receive(..., leftward_tag)
+                else is middle process
+                    MR<<->>MR6: sendrecv(..., leftward_tag)
+                else is rightmost process
+                    MR->>MR6: send(..., leftward_tag)
+                end
 
-                opt has left partner
-                    note right of MR: Send our first cell... TODO!
-                    MR <<->> MR6: comm_world.sendrecv()
+                note right of MR: Send last real value rightwards
+                alt is leftmost process
+                    MR6->>MR: send(..., rightward_tag)
+                else is middle process
+                    MR<<->>MR6: sendrecv(..., rightward_tag)
+                else is rightmost process
+                    MR->>MR6: recv(..., rightward_tag)
                 end
 
             MR-->-MR: void
