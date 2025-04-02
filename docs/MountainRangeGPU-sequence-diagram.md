@@ -47,7 +47,7 @@ activate main
 note over main,MR: Construct MountainRange
 main->>+MR: constructor()
     note right of MR: Inherited construtor.<br>Read in data from file.
-MR-->>-main: MountainRange
+MR-->>-main: MountainRangeGPU
 %% End construct MountainRange
 
 %% Call Solve

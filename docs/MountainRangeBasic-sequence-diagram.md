@@ -50,7 +50,7 @@ main->>+MR: constructor()
     MR->>+MR: step(0)
     note right of MR: Initialize g
     MR-->>-MR: void
-MR-->>-main: MountainRange
+MR-->>-main: MountainRangeBasic
 %% End construct MountainRange
 
 %% Call Solve
