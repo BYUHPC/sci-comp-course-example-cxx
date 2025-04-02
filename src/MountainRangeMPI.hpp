@@ -142,7 +142,7 @@ private:
         const auto &last_real_cell  = x[x.size()-2];
 
         // Tags for sends and receives
-        auto leftward_tag  = mpl::tag_t{0}, rightward_tag = mpl::tag_t{1}; // direction of data flow is indicated
+        auto leftward_tag  = mpl::tag_t{0}, rightward_tag = mpl::tag_t{1};
 
         // Figure out where we are globally so we can know whether we need to send data
         bool is_first = (comm_rank == 0);
