@@ -44,7 +44,7 @@ activate main
 
 %% Construct MountainRange
 note over main,MR: Construct MountainRanges
-note over MR,MRC: Each process reads the entire header and its assigned cells
+note over MR,MRC: Each process reads the entire header and its assigned cells. <br><br> Since multiple process can all read from the <br>same file at the same time without any issues, <br>parallel file access is not illustrated here.
 main->>+MR: constructor(char *filename)
     note over file: Open file for reading only
     MR->>+file: mpl::file(comm_world, filename, read_only)
@@ -152,6 +152,8 @@ main->>+MR: solve()
         %% Checkpoint
         MR->>MR: checkpoint()
         note right of MR: Base code performs checkpointing. <br>It uses the overwritten write() <br> method diagrammed below.
+
+        note over MR,MRC: No process is allowed to "lap" other processes. <br>The MPI operations in both dsteepness() and step() <br> effectively act as barriers so the processes stay in sync.
 
     end
     %% End solve loop
