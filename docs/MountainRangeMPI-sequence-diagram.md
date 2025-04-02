@@ -119,8 +119,6 @@ main->>+MR: solve()
             %% Setup range
             MR->>MR: this_process_cell_range()
 
-
-            note right of MR: Iterate over all assigned cells <br>(all cells stored locally) <br> and
             %% Update h cells
             loop for cell in assigned cells
                 MR->>MR: update_h_cell(cell)
