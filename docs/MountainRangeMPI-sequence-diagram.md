@@ -161,22 +161,33 @@ MR-->>-main: t
 
 %% Call Write
 note over main,MR: Write Result
-note over MR,MRC: Each process writes the entire header and its assigned cells
+note over MR,MRC: Each process writes the entire header and its assigned cells. <br><br>Write calls are interleaved to illustrate the data contention <br>happening at the filesystem level as many processes are <br>writing to the same file at the same time. <br><br> The exact order of the calls is not guaranteed#59; <br>only a single interleaving of parallel calls <br>is presented here among many possible interleavings.
 main->>+MR: write()
+main->>+MRC: write()
+
 
     note over file: Open file for creating & writing only
     MR->>+file: mpl::file(comm_world, filename, create|write_only)
+    MRC->>+file: mpl::file(comm_world, filename, create|write_only)
 
     MR->>file: write_all(ndims)
+    MRC->>file: write_all(ndims)
     MR->>file: write_all(cells)
+    MRC->>file: write_all(cells)
     MR->>file: write_all(t)
+    MRC->>file: write_all(t)
 
     note right of MR: Determine where in the file our cells belong
     MR->>MR: this_process_cell_range()
+    MRC->>MRC: this_process_cell_range()
 
     MR->>file: write_at(r_offset, r.data()+halo_offset, layout)
+    MRC->>file: write_at(r_offset, r.data()+halo_offset, layout)
     MR->>file: write_at(h_offset, h.data()+halo_offset, layout)
+    MRC->>file: write_at(h_offset, h.data()+halo_offset, layout)
 
+    MRC --x file: «passes out of scope»
+    deactivate file
     MR --x file: «passes out of scope»
     deactivate file
     note over file: File is closed
@@ -184,8 +195,12 @@ main->>+MR: write()
     break mpl::io_failure is thrown
         MR->>MR: handle_write_failure(filename)
     end
+    break mpl::io_failure is thrown
+        MRC->>MRC: handle_write_failure(filename)
+    end
 
 MR-->>-main: void
+MRC-->>-main: void
 %% End write
 
 note left of main: Program exits
